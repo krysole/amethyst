@@ -1,0 +1,54 @@
+match(rule, lexer) {
+  this._lexer    = lexer;
+  this._position = 0;
+  this._furthest = 0;
+
+  let result = this[rule]();
+  if (result !== FAIL) {
+    return result;
+  }
+  else {
+    throw new Error(`Failed to match, furthest position ${this._linecol(this._furthest)}.`);
+  }
+}
+
+log(message) {
+  console.error(`${this.constructor.name}.prototype.log() ${this._linecol()} ${message}`);
+}
+
+_linecol(position) {
+  if (position == null) position = this._position;
+
+  let token = this._lexer.get(position);
+
+  return {
+    name: this._lexer.path,
+    line: token.loc.line,
+    column: token.loc.column,
+    toString: function toString() { return `${this.name}:${this.line}:${this.column}`; }
+  };
+}
+
+_tag(tag) {
+  let token = this._lexer.get(this._position);
+  if (token.tag !== tag) return FAIL;
+
+  this._position = this._position + 1;
+  if (this._position > this._furthest) this._furthest = this._position;
+
+  return token;
+}
+
+_text(text) {
+  let token = this._lexer.get(this._position);
+  if (token.text !== text) return FAIL;
+
+  this._position = this._position + 1;
+  if (this._position > this._furthest) this._furthest = this._position;
+
+  return token;
+}
+
+nothing() {
+  return null;
+}

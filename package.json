@@ -1,0 +1,7 @@
+{
+  "name": "amethyst",
+  "description": "The Amethyst Programming Language",
+  "version": "1.0-pre",
+  "license": "ISC",
+  "type": "module"
+}

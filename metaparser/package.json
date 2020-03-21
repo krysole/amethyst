@@ -1,0 +1,7 @@
+{
+  "name": "metaparser",
+  "description": "A Metacompiler Language for Writing Parsers.",
+  "version": "1.0-pre",
+  "license": "ISC",
+  "type": "module"
+}

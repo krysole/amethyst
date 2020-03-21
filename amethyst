@@ -1,0 +1,204 @@
+#!/usr/bin/env node --experimental-modules
+//
+// The Amethyst Programming Language
+//
+// Copyright 2020 Lorenz Pretterhofer <krysole@alexicalmistake.com>
+//
+// Permission to use, copy, modify, and distribute this work for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE WORK IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS WORK INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+// ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+// OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS WORK.
+//
+"use strict";
+
+import * as fs               from "fs";
+import * as url              from 'url';
+import * as path             from "path";
+import { inspect }           from "util";
+
+import { Lexer }             from "./Lexer.js";
+import { Parser }            from "./Parser.js";
+import { Generate }          from "./Generate.js";
+
+
+function __dirname() {
+  return path.dirname(url.fileURLToPath(import.meta.url))
+}
+
+function version() {
+  return JSON.parse(fs.readFileSync(path.join(__dirname(), "package.json"))).version;
+}
+
+function prologue() {
+  return fs.readFileSync(path.join(__dirname(), "Prologue.js"));
+}
+
+
+function main() {
+  let outputType = null;
+  let outputPath = null;
+  let inputPath  = null;
+  let mainclass  = null;
+
+  let i = 2;
+  let c = process.argv.length;
+  while (i < c) {
+    let o = process.argv[i++];
+
+    // Display usage and exit if help is specified.
+    if (o === "--help") {
+      usage();
+    }
+
+    // Compiler output-mode.
+    if (o === "--lex") {
+      if (outputType != null) abort(`Cannot specify multiple outputs.`);
+      outputType = `lex`;
+      continue;
+    }
+    if (o === "--parse") {
+      if (outputType != null) abort(`Cannot specify multiple outputs.`);
+      outputType = `parse`;
+      continue;
+    }
+    if (o === "--simplify") {
+      if (outputType != null) abort(`Cannot specify multiple outputs.`);
+      outputType = `simplify`;
+      continue;
+    }
+    if (o === "--analyze") {
+      if (outputType != null) abort(`Cannot specify multiple outputs.`);
+      outputType = `analyze`;
+      continue;
+    }
+    if (o === "--generate") {
+      if (outputType != null) abort(`Cannot specify multiple outputs.`);
+      outputType = `generate`;
+      continue;
+    }
+
+    // Output target file path.
+    if (o === "--output") {
+      if (i === c)            abort(`Expected path argument for --output.`);
+      if (outputPath != null) abort(`Cannot specify --ouput twice.`);
+      outputPath = process.argv[i++];
+      continue;
+    }
+
+    // Generate a command line application using the class specified.
+    if (o === "--main") {
+      if (i === c)           abort(`Expected main class argument for --main.`);
+      if (mainclass != null) abort(`Cannot specify multiple main classes.`);
+      mainclass = process.argv[i++];
+      continue;
+    }
+
+    // Short options
+    if (o.match(/^-[a-zA-Z0-9]+$/)) {
+      for (let si = 1, sc = o.length; si < sc; si++) {
+        let so = o[si];
+
+        // Display usage and exit if help is specified.
+        if (so === "h") {
+          usage();
+        }
+
+        // Output target file path.
+        if (so === "o") {
+          if (i === c)            abort(`Expected path argument for -o.`);
+          if (outputPath != null) abort(`Cannot specify -o twice.`);
+          outputPath = process.argv[i++];
+          continue;
+        }
+
+        // Unrecognized short option.
+        abort(`Unrecognized short option ${so}.`);
+      }
+      continue;
+    }
+
+    // Unrecognized regular option.
+    if (o.match(/^--.*$/)) {
+      abort(`Unrecognized option ${o}.`);
+    }
+
+    // Grammar file.
+    if (inputPath != null) abort(`Cannot specify input twice.`);
+    inputPath = o;
+  }
+
+  // Set default options where not explicitly specified.
+  if (outputType == null) outputType = `nodejs`;
+  if (mainclass  == null) mainclass  = `Application`;
+
+  // Ensure that required options are present.
+  if (inputPath == null) usage();
+
+
+  // Read input.
+  if (!fs.existsSync(inputPath)) abort(`Specified input-path ${inputPath} does not exist.`);
+  let inputString = fs.readFileSync(inputPath, "utf8");
+
+
+  if (outputType === "lex") {
+    let tokens = new Lexer(inputString, inputPath).all();
+    output(outputPath, inspect(tokens, { depth: null }) + "\n");
+  }
+
+
+  // Parse input.
+  let ast = new Parser().match("unit", new Lexer(inputString, inputPath));
+  if (outputType === "parse") {
+    output(outputPath, inspect(ast, { depth: null }) + "\n");
+  }
+
+
+  // Generate JavaScript.
+  Generate(ast, "");
+  if (outputType === "generate") {
+    output(outputPath, ast.js);
+  }
+
+
+  // Generate NodeJS Application.
+  if (outputType === "nodejs") {
+    let appjs = ``;
+    appjs += `#!/usr/bin/env node\n`;
+    appjs += `// Generated by amethyst ${version()}.`;
+    appjs += `\n`;
+    appjs += prologue();
+    appjs += ast.js;
+    appjs += `\n`;
+    appjs += `Amethyst.boot();\n`;
+    appjs += `Amethyst.root.${mainclass}.SEL__main(process.argv);\n`;
+    output(outputPath, appjs);
+  }
+
+
+  throw new Error();
+}
+
+function abort(message) {
+  console.error(message);
+  process.exit(1);
+}
+
+function output(path, string) {
+  if (path != null) fs.writeFileSync(path, string);
+  else              process.stdout.write(string);
+  process.exit(0);
+}
+
+function usage() {
+  console.error(`usage: amethyst [path]`);
+  process.exit(1);
+}
+
+setTimeout(main);
