@@ -100,7 +100,7 @@ export function Generate(ast, prefix, className, scope) {
     let imixins = ast.imixins.map(name => JSON.stringify(name)).join(", ");
     let cmixins = ast.cmixins.map(name => JSON.stringify(name)).join(", ");
 
-    ast.js += prefix + `Amethyst.defineClass(${name}, [${imixins}], [${cmixins}]);\n`;
+    ast.js += prefix + `AM__defineClass(${name}, [${imixins}], [${cmixins}]);\n`;
     for (let attribute of cattrs) {
       ast.js += prefix + `\n`;
       ast.js += attribute.js;
@@ -125,13 +125,15 @@ export function Generate(ast, prefix, className, scope) {
     let name = JSON.stringify(`${className}${ast.static ? ".class" : ""}:${ast.name}`);
     let vis  = JSON.stringify(`${ast.get}:${ast.set}:${ast.rep}`);
 
-    ast.js += prefix + `Amethyst.defineAttribute(${name}, ${vis});\n`;
+    ast.js += prefix + `AM__defineAttribute(${name}, ${vis});\n`;
   }
   else if (ast.tag === "Method") {
     ast.js = ``;
 
     let name = JSON.stringify(`${className}${ast.static ? ".class" : ""}:${ast.name}`);
     let vis  = JSON.stringify(`${ast.vis}`);
+
+    let fname = `SEL__${className}${ast.static ? ".class" : ""}__${ast.name}`.replace(".", "__");
 
     let precount = 0, postcount = 0, restindex = null;
     for (let i = 0; i < ast.parameters.length; i++) {
@@ -162,15 +164,15 @@ export function Generate(ast, prefix, className, scope) {
     if (restindex == null) {
       let parameters = ast.parameters.map(p => Mangle(p.name)).join(", ");
 
-      ast.js += prefix + `Amethyst.defineMethod(${name}, ${vis}, function (__Amethyst, __JS, __root) {\n`;
-      ast.js += prefix + `  return function (${parameters}) {\n`;
+      ast.js += prefix + `AM__defineMethod(${name}, ${vis},\n`;
+      ast.js += prefix + `  function ${fname}(${parameters}) {\n`;
       ast.js +=               ast.body.js;
-      ast.js += prefix + `  };\n`;
-      ast.js += prefix + `});\n`;
+      ast.js += prefix + `  }\n`;
+      ast.js += prefix + `);\n`;
     }
     else {
-      ast.js += prefix + `Amethyst.defineMethod(${name}, ${vis}, function (__Amethyst, __JS, __root) {\n`;
-      ast.js += prefix + `  return function () {\n`;
+      ast.js += prefix + `AM__defineMethod(${name}, ${vis},\n`;
+      ast.js += prefix + `  function ${fname}() {\n`;
       for (let i = 0; i < ast.parameters.length; i++) {
         let name = Mangle(ast.parameters[i].name);
         if (ast.parameters[i].tag === "Plain_Parameter" && i < restindex) {
@@ -187,8 +189,8 @@ export function Generate(ast, prefix, className, scope) {
         }
       }
       ast.js +=               ast.body.js;
-      ast.js += prefix + `  };\n`;
-      ast.js += prefix + `});\n`;
+      ast.js += prefix + `  }\n`;
+      ast.js += prefix + `);\n`;
     }
   }
 
@@ -253,6 +255,9 @@ export function Generate(ast, prefix, className, scope) {
       ast.js +=             ast.alternative.js;
       ast.js += prefix + `}\n`;
     }
+  }
+  else if (ast.tag === "S_Match") {
+    throw Error("NOT_IMPLEMENTED");
   }
   else if (ast.tag === "S_Once") {
     ast.js = ``;
@@ -365,24 +370,24 @@ export function Generate(ast, prefix, className, scope) {
     Generate(ast.a, prefix, className, scope);
     Generate(ast.b, prefix, className, scope);
 
-    ast.js = `(__Amethyst.check_boolean(${ast.a.js}) || __Amethyst.check_boolean(${ast.b.js}))`;
+    ast.js = `(AM__check_boolean(${ast.a.js}) || AM__check_boolean(${ast.b.js}))`;
   }
   else if (ast.tag === "E_XOR") {
     Generate(ast.a, prefix, className, scope);
     Generate(ast.b, prefix, className, scope);
 
-    ast.js = `(__Amethyst.check_boolean(${ast.a.js}) !== __Amethyst.check_boolean(${ast.b.js}))`;
+    ast.js = `(AM__check_boolean(${ast.a.js}) !== AM__check_boolean(${ast.b.js}))`;
   }
   else if (ast.tag === "E_AND") {
     Generate(ast.a, prefix, className, scope);
     Generate(ast.b, prefix, className, scope);
 
-    ast.js = `(__Amethyst.check_boolean(${ast.a.js}) && __Amethyst.check_boolean(${ast.b.js}))`;
+    ast.js = `(AM__check_boolean(${ast.a.js}) && AM__check_boolean(${ast.b.js}))`;
   }
   else if (ast.tag === "E_NOT") {
     Generate(ast.a, prefix, className, scope);
 
-    ast.js = `(!__Amethyst.check_boolean(${ast.a.js}))`;
+    ast.js = `(!AM__check_boolean(${ast.a.js}))`;
   }
 
   else if (ast.tag === "E_Ternary") {
@@ -396,32 +401,55 @@ export function Generate(ast, prefix, className, scope) {
     Generate(ast.a, prefix, className, scope);
     Generate(ast.b, prefix, className, scope);
 
-    ast.js = `${ast.a.js}[${JSON.stringify(ast.o)}](${ast.b.js})`;
+    if (ast.o === "==") ast.js =        `AM__eq(${ast.a.js}, ${ast.b.js})`;
+    if (ast.o === "~=") ast.js =        `AM__ne(${ast.a.js}, ${ast.b.js})`;
+    if (ast.o === "<")  ast.js = `(0 <  AM__ord(${ast.a.js}, ${ast.b.js}))`;
+    if (ast.o === "<=") ast.js = `(0 <= AM__ord(${ast.a.js}, ${ast.b.js}))`;
+    if (ast.o === ">=") ast.js = `(0 >= AM__ord(${ast.a.js}, ${ast.b.js}))`;
+    if (ast.o === ">")  ast.js = `(0 >  AM__ord(${ast.a.js}, ${ast.b.js}))`;
   }
   else if (ast.tag === "E_Order") {
     Generate(ast.a, prefix, className, scope);
     Generate(ast.b, prefix, className, scope);
 
-    ast.js = `${ast.a.js}["<>"](${ast.b.js})`;
+    ast.js = `AM__ord(${ast.a.js}, ${ast.b.js})`;
   }
   else if (ast.tag === "E_Is") {
     Generate(ast.a, prefix, className, scope);
     Generate(ast.b, prefix, className, scope);
 
-    ast.js = `(function(v,c){return c.class_tag() in v;})(${ast.a.js}, ${ast.b.js})`;
+    ast.js = `(function(v,c){return c.tag in v;})(${ast.a.js}, ${ast.b.js})`;
   }
   else if (ast.tag === "E_Infix") {
     Generate(ast.a, prefix, className, scope);
     Generate(ast.b, prefix, className, scope);
 
-    ast.js = `${ast.a.js}[${JSON.stringify(ast.o)}](${ast.b.js})`;
+    if (ast.o === "++")   ast.pname = "AM__concat";
+    if (ast.o === "|")    ast.pname = "AM__bit_or";
+    if (ast.o === "^")    ast.pname = "AM__bit_xor";
+    if (ast.o === "&")    ast.pname = "AM__bit_and";
+    if (ast.o === "<<")   ast.pname = "AM__shl";
+    if (ast.o === ">>")   ast.pname = "AM__sar";
+    if (ast.o === ">>>")  ast.pname = "AM__shr";
+    if (ast.o === "+")    ast.pname = "AM__add";
+    if (ast.o === "-")    ast.pname = "AM__sub";
+    if (ast.o === "*")    ast.pname = "AM__mul";
+    if (ast.o === "/")    ast.pname = "AM__div";
+    if (ast.o === "quo")  ast.pname = "AM__quo";
+    if (ast.o === "rem")  ast.pname = "AM__rem";
+    if (ast.o === "fquo") ast.pname = "AM__fquo";
+    if (ast.o === "frem") ast.pname = "AM__frem";
+    if (ast.o === "cquo") ast.pname = "AM__cquo";
+    if (ast.o === "crem") ast.pname = "AM__crem";
+
+    ast.js = `${ast.pname}(${ast.a.js}, ${ast.b.js})`;
   }
   else if (ast.tag === "E_Prefix") {
     Generate(ast.a, prefix, className, scope);
 
     if (ast.name === "+") ast.js = `${ast.a.js}.posate()`;
     if (ast.name === "-") ast.js = `${ast.a.js}.negate()`;
-    if (ast.name === "~") ast.js = `${ast.a.js}.complement()`;
+    if (ast.name === "~") ast.js = `${ast.a.js}.not()`;
   }
   else if (ast.tag === "E_Message") {
     if (ast.recipient == null) {
@@ -664,16 +692,16 @@ export function Generate(ast, prefix, className, scope) {
   }
   else if (ast.tag === "E_Concatenate") {
     if (ast.elements.length === 0) {
-      ast.js = `__Amethyst.as_string(${JSON.stringify("")})`;
+      ast.js = `AM__as_string(${JSON.stringify("")})`;
     }
     else if (ast.elements.length === 1) {
       Generate(ast.elements[0], prefix, className, scope);
-      ast.js = `__Amethyst.as_string(${ast.elements[0].js})`;
+      ast.js = `AM__as_string(${ast.elements[0].js})`;
     }
     else {
       for (let element of ast.elements) Generate(element, prefix, className, scope);
 
-      let elements = ast.elements.map(e => `__Amethyst.as_string(${e.js})`).join(" + ");
+      let elements = ast.elements.map(e => `AM__as_string(${e.js})`).join(" + ");
 
       ast.js = `(${elements})`;
     }
@@ -690,10 +718,6 @@ export function Generate(ast, prefix, className, scope) {
   }
   else if (ast.tag === "E_Nil") {
     ast.js = "null";
-  }
-
-  else if (ast.tag === "E_JS") {
-    ast.js = "__JS";
   }
 
   else if (ast.tag === "E_Self") {

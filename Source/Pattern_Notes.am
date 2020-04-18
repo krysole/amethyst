@@ -1,0 +1,123 @@
+
+
+class Pattern_Notation {
+
+  public examples {
+    -- Basic assignment, declaration and dry binding (no op).
+    let a = expr
+    set a = expr
+    dry a = expr
+    a = expr
+
+    -- Basic enumerator destructuring.
+    let [a, b, c] = expr
+    set [a, b, c] = expr
+    dry [a, b, c] = expr
+    [a, b, c] = expr
+
+    -- Set, let and dry operator overriding specific pattern binding mode.
+    let [a, b, set c] = expr
+    set [a, b, let c] = expr
+    dry [a, b, set c] = expr
+    [a, b, let c] = expr
+
+    -- Type annotation support uses the ':' operator.
+    let a: Integer = expr
+
+    -- Destructuring only performs value extraction with nil padding.
+    -- The compiler will statically check the assignment however.
+    let a: Integer = 0 -- No problem.
+    let a: Integer = "0".cast(Integer) -- Actually still a string.
+
+
+
+    -- Explicit checking can be performed using the match operator.
+    match     a: Integer = expr -- Compile error.
+    match let a: Integer = expr -- Binding mode explicitly set to let.
+    match set a: Integer = expr -- Binding mode explicitly set to set.
+
+    -- Single-case match statements are also usable.
+    given "0" match a: Integer do a * a -- Raises MATCH_FAIL.
+
+    -- Multi-case match operator support can also be used.
+    given "0" match {
+      case v: Integer do return [Integer, v]
+      case v: String  do return [String,  v]
+    }
+
+    -- Multi-case match operator also allows an else branch.
+    given "0" match {
+      case v: Integer do return [Integer, v]
+      case v: String  do return [String,  v]
+      case v: Any     do return [Any,     v]
+      else               return [Error,   nil]
+    }
+
+    -- Binding the argument to given is also allowed.
+    given value = "0" match {
+      case :Integer do return [Integer, value]
+      case :String  do return [String,  value]
+      case :Any     do return [Any,     value]
+      else             return [Error,   nil]
+    }
+
+    -- It is also possible to perform predicate matches if required.
+    [[x] -> x is my_object, a, b, c] = expr
+
+    -- Exact instance matches can be performed using the 'is' operator.
+    [is my_object, a, b, c] == expr
+
+    -- Finally basic equality can be done using the '@' operator.
+    [@my_object, a, b, c] == expr
+
+
+    -- A more tentative notation is the dictionary pattern.
+    {"a" => a, "b" => b, "c" => c} = expr
+
+    -- This can also use the string dictionary notation directly.
+    {a: a, b: b, c: c} = expr
+
+    -- To specify a type for the value binding, parentheses should be used.
+    {"x" => (a: String), "y" => (b: String)} = expr
+    {x: (a: String), y: (b: String)} = expr
+
+    -- It isn't strictly necessary however.
+    {"x" => a: String, "y" => b: String} = expr
+    {x: a: String, y: b: String} = expr
+
+    -- It is also possible to elide a binding which will imply it.
+    {x, y, z} = expr
+
+    -- All of these may be combined with the let, set and dry operators.
+    {let x, let y, dry z} = expr
+
+    -- The binding mode operator must appear before the binding.
+    {"x" => let x} = expr
+    {x: let x} = expr
+
+
+    -- Sometimes logic modifiers are required when matching.
+    given n match {
+      case not 0 do expr
+      case a and set n and 0 do expr
+    }
+
+
+    -- Procedures and methods are treated the same as destructuring.
+    let p = proc [a: Number] do a.as(String)
+    p["0"]              -- Compile error.
+    p["0".cast(Number)] -- Passes unchecked but incorrect value.
+
+    -- Match procs/methods can be used if pattern matching is required.
+    let p = proc match [a: Number] do a.as(String)
+    p["0"] -- Runtime error.
+
+
+    -- Additional conditions can be added using the where operator.
+    given n match {
+      case a: Number where a >= 0 do return a - 1
+      case a: Number where a == 0 do return 0
+    }
+  }
+
+}

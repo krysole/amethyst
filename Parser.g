@@ -54,6 +54,7 @@ grammar Parser {
   | letStatement
   | ifStatement
   | unlessStatement
+  | matchStatement
   | onceStatement
   | foreverStatement
   | whileStatement
@@ -67,6 +68,13 @@ grammar Parser {
   | returnStatement
   | expressionStatement
   }
+  bstatement {
+  | block
+  | breakStatement:s           !{ tag: "Block", statements: [s] }
+  | continueStatement:s        !{ tag: "Block", statements: [s] }
+  | returnStatement:s          !{ tag: "Block", statements: [s] }
+  | ~"{" expressionStatement:s !{ tag: "Block", statements: [s] }
+  }
 
   letStatement {
     "let" ( variable ; "," )+:vs
@@ -74,49 +82,60 @@ grammar Parser {
   }
   ifStatement {
     "if" expression:c
-    ( TERM? "then" ~"{" expression | TERM? "then" block | TERM? block ):t
+    ( TERM? "then" bstatement | TERM? block ):t
     ( TERM? elseBranch | !null ):f
     !{ tag: "S_If", negated: false, condition: c, consiquent: t, alterantive: f }
   }
   unlessStatement {
     "unless" expression:c
-    ( TERM? "then" ~"{" expression | TERM? "then" block | TERM? block ):t
+    ( TERM? "then" bstatement | TERM? block ):t
     ( TERM? elseBranch | !null ):f
     !{ tag: "S_If", negated: true, condition: c, consiquent: t, alternative: f }
   }
   elseBranch {
   | "else" ifStatement
   | "else" unlessStatement
-  | "else" ( ~"{" expression | block )
+  | "else" bstatement
+  }
+  matchStatement {
+    "match" expression:s mbody:cs
+    !{ tag: "S_Match", subject: s, cases: cs }
+  }
+  caseStatement {
+  | "case" pattern:p
+    ( TERM? "do" bstatement | TERM? block ):b
+    !{ tag: "C_Pattern", pattern: p, body: b }
+  | "else" bstatement:b
+    !{ tag: "C_Else", body: b }
   }
   onceStatement {
-  | "once" ( ~"{" expression | block ):b
+  | "once" bstatement:b
     !{ tag: "S_Once", body: b }
   | block:b
     !{ tag: "S_Once", body: b }
   }
   foreverStatement {
-    "forever" ( ~"{" expression | block ):b
+    "forever" bstatement:b
     !{ tag: "S_Forever", body: b }
   }
   whileStatement {
     "while" expression:c
-    ( TERM? "do" ~"{" expression | TERM? "do" block | TERM? block ):b
+    ( TERM? "do" bstatement | TERM? block ):b
     !{ tag: "S_While", negated: false, condition: c, body: b }
   }
   untilStatement {
     "until" expression:c
-    ( TERM? "do" ~"{" expression | TERM? "do" block | TERM? block ):b
+    ( TERM? "do" bstatement | TERM? block ):b
     !{ tag: "S_While", negated: true, condition: c, body: b }
   }
   doWhileStatement {
-    ( "do" ~"{" expression | "do" block ):b
-    ( TERM? "while" expression:c )
+    "do" bstatement:b
+    TERM? "while" expression:c
     !{ tag: "S_Do_While", negated: false, body: b, condition: c }
   }
   doUntilStatement {
-    ( "do" ~"{" expression | "do" block ):b
-    ( TERM? "until" expression:c )
+    "do" bstatement:b
+    TERM? "until" expression:c
     !{ tag: "S_Do_While", negated: true, body: b, condition: c }
   }
   forStatement {
@@ -124,12 +143,12 @@ grammar Parser {
     ( variable ; "," )+:vs ";"
     ( expression ; "," )+:cs ";"
     ( expression ; "," )+:is
-    ( TERM? "do" ~"{" expression | TERM? "do" block | TERM? block ):b
+    ( TERM? "do" bstatement | TERM? block ):b
     !{ tag: "S_For", variables: vs, conditions: cs, increments: is, body: b }
   }
   eachStatement {
     "each" ( local ; "," )+:vs "in" expression:s
-    ( TERM? "do" ~"{" expression | TERM? "do" block | TERM? block ):b
+    ( TERM? "do" bstatement | TERM? block ):b
     !{ tag: "S_Each", variables: vs, subject: s, body: b }
   }
   breakStatement {
@@ -178,27 +197,32 @@ grammar Parser {
   | relationalExpression
   }
   relationalExpression {
-  | vecopExpression:k "=>":o vecopExpression:v !{ tag: "E_Keyval", key: k, value: v }
-  | vecopExpression:a "==":o vecopExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
-  | vecopExpression:a "~=":o vecopExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
-  | vecopExpression:a ">=":o vecopExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
-  | vecopExpression:a "<=":o vecopExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
-  | vecopExpression:a ">":o  vecopExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
-  | vecopExpression:a "<":o  vecopExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
-  | vecopExpression:a "<>":o vecopExpression:b !{ tag: "E_Order",                 a: a, b: b }
-  | vecopExpression:a "is":o vecopExpression:b !{ tag: "E_Is",                    a: a, b: b }
-  | vecopExpression
+  | concatExpression:k "=>":o concatExpression:v !{ tag: "E_Keyval", key: k, value: v }
+  | concatExpression:a "==":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a "~=":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a ">=":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a "<=":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a ">":o  concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a "<":o  concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a "<>":o concatExpression:b !{ tag: "E_Order",                 a: a, b: b }
+  | concatExpression:a "is":o concatExpression:b !{ tag: "E_Is",                    a: a, b: b }
+  | concatExpression
   }
-  vecopExpression {
-  | vecopExpression:a "|":o shiftExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | vecopExpression:a "^":o shiftExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | vecopExpression:a "&":o shiftExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  |                         shiftExpression
+  concatExpression {
+  | concatExpression:a "++":o bitwiseExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  |                           bitwiseExpression:b
+  }
+  bitwiseExpression {
+  | bitwiseExpression:a "|":o shiftExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | bitwiseExpression:a "^":o shiftExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | bitwiseExpression:a "&":o shiftExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  |                           shiftExpression
   }
   shiftExpression {
-  | shiftExpression:a "<<":o addExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | shiftExpression:a ">>":o addExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  |                          addExpression
+  | shiftExpression:a  "<<":o addExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | shiftExpression:a  ">>":o addExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | shiftExpression:a ">>>":o addExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  |                           addExpression
   }
   addExpression {
   | addExpression:a "+":o mulExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
@@ -206,19 +230,15 @@ grammar Parser {
   |                       mulExpression
   }
   mulExpression {
-  | mulExpression:a "*"    expExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "/"    expExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "quo"  expExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "rem"  expExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "fquo" expExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "frem" expExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "cquo" expExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "crem" expExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  |                        expExpression
-  }
-  expExpression {
-  | prefixExpression:a "exp" expExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | prefixExpression
+  | mulExpression:a "*"    prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a "/"    prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a "quo"  prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a "rem"  prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a "fquo" prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a "frem" prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a "cquo" prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a "crem" prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  |                        prefixExpression
   }
   prefixExpression {
   | "+":o secondaryExpression:a !{ tag: "E_Prefix", o: o.text, a: a }
@@ -265,6 +285,18 @@ grammar Parser {
   }
 
 
+  pattern {
+  | "self" !{ tag: "P_Equal", expression: { tag: "E_Self" } }
+
+  | "\"" concatenateFragment*:es "\"" !{ tag: "P_Equal", expression: { tag: "E_Concatenate", elements: es } }
+
+  | NUMBER:n !{ tag: "P_Equal", expression: { tag: "E_Number",  value: n.value } }
+  | "true"   !{ tag: "P_Equal", expression: { tag: "E_Boolean", value: true    } }
+  | "false"  !{ tag: "P_Equal", expression: { tag: "E_Boolean", value: false   } }
+  | "nil"    !{ tag: "P_Equal", expression: { tag: "E_Nil" } }
+  }
+
+
   concatenateFragment {
   | STRING:t               !{ tag: "E_String", value: t.value }
   | "{{" expression:e "}}" !e
@@ -301,6 +333,10 @@ grammar Parser {
   | TERM? "do" expression
   | TERM? "{" INDENT ( ( statement ; ";" )*:ss ";"? TERM !ss )*:sss DEDENT "}" !{ tag: "Block", statements: sss.flat() }
   | TERM? "{"          ( statement ; ";" )*:ss ";"? TERM?                  "}" !{ tag: "Block", statements: ss         }
+  }
+  mbody {
+  | TERM? "{" INDENT ( ( caseStatement ; ";" )*:ss ";"? TERM !ss )*:sss DEDENT "}" !sss.flat()
+  | TERM? "{"          ( caseStatement ; ";" )*:ss ";"? TERM?                  "}" !ss
   }
   variable {
     ID:n ( "=" expression:e | !null:e )
@@ -342,7 +378,7 @@ grammar Parser {
       "quo", "rem", "fquo", "frem", "cquo", "crem",
       "proc",
       "self", "super", "true", "false", "nil",
-      "do"
+      "do",
     ].includes(n.text)
     !n.text
   }

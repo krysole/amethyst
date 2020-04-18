@@ -1,0 +1,870 @@
+--
+-- The Amethyst Programming Language
+--
+-- Copyright 2020 Lorenz Pretterhofer <krysole@alexicalmistake.com>
+--
+-- Permission to use, copy, modify, and distribute this work for any
+-- purpose with or without fee is hereby granted, provided that the above
+-- copyright notice and this permission notice appear in all copies.
+--
+-- THE WORK IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+-- WITH REGARD TO THIS WORK INCLUDING ALL IMPLIED WARRANTIES OF
+-- MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+-- ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+-- WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+-- ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+-- OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS WORK.
+--
+
+-- TODO
+-- Some of the code in here uses some basic pattern matching. I will
+-- probably have to implement at least that much unless I'm ok rewriting
+-- the code later, or just using something else anyway.
+
+-- TODO
+-- Operator definitions need to be implemented properly for this to
+-- compile.
+
+-- TODO
+-- Several of the methods in here are missing error handling. In fact, I think
+-- that almost all of the methods are to some degree. I should review them and
+-- figure out how the errors should be reported. I believe that the deep crash
+-- semantic should probably be the prefered approach, although that does
+-- assume that any error is any one which way or the other to the user?
+
+class Array (Object) {
+
+  public static [] {
+    let array = self.$constructor.new()
+    for i = 0, c = $arguments.$length; i < c; i = i + 1 {
+      array.append!($arguments.prop(i))
+    }
+    return array
+  }
+
+  public static empty do []
+
+
+  private : private _count     = 0
+  private : private capacity   = 32
+  private : private root       = nil
+  private : private tail       = nil
+  private : private tail_count = 0
+  private : private version    = 0
+
+
+  public copy {
+    let array = Array.$constructor.new()
+
+    version = version + 1
+
+    array._count     = _count
+    array.capacity   = capacity
+    array.root       = root
+    array.tail       = tail
+    array.tail_count = tail_count
+    array.version    = version
+
+    return array
+  }
+  public clear! {
+    _count     = 0
+    capacity   = 32
+    root       = nil
+    tail       = nil
+    tail_count = 0
+    version    = 0
+  }
+  private transmute!(array) {
+    -- 'transmute!' consumes the contents of another array object, which must not
+    -- be used after invoking 'transmute!'. This is private to avoid posential
+    -- confusion, but like all private methods can be used if required.
+
+    -- TODO Figure out if there is a better name that is somewhat less confusing.
+    --      Alternatively, see if there is a way of efficiently killing the other array.
+
+    _count     = array._count
+    capacity   = array.capacity
+    root       = array.root
+    tail       = array.tail
+    tail_count = array.tail_count
+    version    = array.version
+
+    return self
+  }
+
+
+  public empty?     do _count == 0
+  public non_empty? do _count ~= 0
+
+
+  public reverse {
+    let array = []
+    each e in ereverse do array.append!(e)
+    return array
+  }
+  public reverse! do transmute!(reverse)
+
+
+  -- The purpose of Enumerator here isn't just for turning the iteration
+  -- into a data structure, but is also intended to allow the enumerator
+  -- implementation to remember where exactly it is in the tree, allowing
+  -- the tree traversal cost to be completely removed.
+  --
+  -- public enumerate ...
+  -- public ereverse ...
+
+
+  -- This one is supposed to allow things like sort! to consume parts
+  -- of the array during sorting by reusing the segments instead of
+  -- allocating new ones. Generally new segments are allocated to keep
+  -- the language simpler and more predictable, but this isn't very good
+  -- when performing sorting due to the segment structure.
+  --
+  -- public consume!
+
+
+  -- public sort  ...
+  -- public sort! ...
+
+
+  -- public shuffle  ...
+  -- public shuffle! ...
+
+
+  public as_dictionary {
+    let dictionary = {}
+    each e, i in self do dictionary.insert!(i, e)
+    return dictionary
+  }
+  public as_source {
+    return "[" ++ map([e] -> e.as_source).join(", ") ++ "]"
+  }
+
+
+  public keys   do [0...count]
+  public values do self
+
+
+  public [index] {
+    let tail_start = _count - tail_count
+    let tail_index = index  - tail_start
+    if tail_index >= 0 {
+      return tail.prop(tail_index)
+    }
+    else {
+      let segment = root
+      let subcap  = capacity
+      let bindex  = Math.floor(index / subcap)
+
+      -- Descend down to the required leaf node.
+      while subcap > 1 {
+        segment = segment.prop(bindex)
+        index   = index % subcap
+        subcap  = subcap / 32
+        bindex  = Math.floor(index / subcap)
+      }
+
+      return segment.prop(bindex)
+    }
+  }
+  public [index] = value {
+    let tail_start = _count - tail_count
+    let tail_index = index  - tail_start
+    if tail_index >= 0 {
+      if tail.$version ~= version {
+        tail = tail.$slice(); tail.$version = version
+      }
+
+      return tail.prop(tail_index) = value
+    }
+    else {
+      if root.$version ~= version {
+        root = root.$slice(); root.$version = version
+      }
+
+      let current = root
+      let child   = nil
+      let subcap  = capacity / 32
+      let bindex  = Math.floor(index / subcap)
+
+      -- Descend down to the leaf node.
+      while subcap > 1 {
+        segment = segment.prop(bindex)
+        index   = index % subcap
+        subcap  = subcap / 32
+        bindex  = Math.floor(index / subcap)
+
+        if segment.$version ~= version {
+          segment = segment.$slice(); segment.$version = version
+        }
+      }
+
+      return segment.prop(bindex) = value
+    }
+  }
+  public [index] # value {
+    let v = copy
+    v[index] = value
+    return v
+  }
+
+  public last(index) {
+    return self[_count - 1 - (index ~= nil ? index : 0)]
+  }
+  public last(index) = value {
+    return self[_count - 1 - (index ~= nil ? index : 0)] = value
+  }
+  public last(index) # value {
+    return self[_count - 1 - (index ~= nil ? index : 0)] # value
+  }
+
+  public first   do self[0]
+  public second  do self[1]
+  public third   do self[2]
+  public fourth  do self[3]
+  public fifth   do self[4]
+  public sixth   do self[5]
+  public seventh do self[6]
+  public eighth  do self[7]
+  public ninth   do self[8]
+  public tenth   do self[9]
+
+  public first   = value do self[0] = value
+  public second  = value do self[1] = value
+  public third   = value do self[2] = value
+  public fourth  = value do self[3] = value
+  public fifth   = value do self[4] = value
+  public sixth   = value do self[5] = value
+  public seventh = value do self[6] = value
+  public eighth  = value do self[7] = value
+  public ninth   = value do self[8] = value
+  public tenth   = value do self[9] = value
+
+  public first   # value do self[0] # value
+  public second  # value do self[1] # value
+  public third   # value do self[2] # value
+  public fourth  # value do self[3] # value
+  public fifth   # value do self[4] # value
+  public sixth   # value do self[5] # value
+  public seventh # value do self[6] # value
+  public eighth  # value do self[7] # value
+  public ninth   # value do self[8] # value
+  public tenth   # value do self[9] # value
+
+  public first_last   do self[_count - 1 - 0]
+  public second_last  do self[_count - 1 - 1]
+  public third_last   do self[_count - 1 - 2]
+  public fourth_last  do self[_count - 1 - 3]
+  public fifth_last   do self[_count - 1 - 4]
+  public sixth_last   do self[_count - 1 - 5]
+  public seventh_last do self[_count - 1 - 6]
+  public eighth_last  do self[_count - 1 - 7]
+  public ninth_last   do self[_count - 1 - 8]
+  public tenth_last   do self[_count - 1 - 9]
+
+  public first_last   = value do self[_count - 1 - 0] = value
+  public second_last  = value do self[_count - 1 - 1] = value
+  public third_last   = value do self[_count - 1 - 2] = value
+  public fourth_last  = value do self[_count - 1 - 3] = value
+  public fifth_last   = value do self[_count - 1 - 4] = value
+  public sixth_last   = value do self[_count - 1 - 5] = value
+  public seventh_last = value do self[_count - 1 - 6] = value
+  public eighth_last  = value do self[_count - 1 - 7] = value
+  public ninth_last   = value do self[_count - 1 - 8] = value
+  public tenth_last   = value do self[_count - 1 - 9] = value
+
+  public first_last   # value do self[_count - 1 - 0] # value
+  public second_last  # value do self[_count - 1 - 1] # value
+  public third_last   # value do self[_count - 1 - 2] # value
+  public fourth_last  # value do self[_count - 1 - 3] # value
+  public fifth_last   # value do self[_count - 1 - 4] # value
+  public sixth_last   # value do self[_count - 1 - 5] # value
+  public seventh_last # value do self[_count - 1 - 6] # value
+  public eighth_last  # value do self[_count - 1 - 7] # value
+  public ninth_last   # value do self[_count - 1 - 8] # value
+  public tenth_last   # value do self[_count - 1 - 9] # value
+
+
+  public append(value) do copy.append!(value)
+  public append!(value) {
+    if tail_count >= 32 {
+      if root == nil {
+        -- Create new root, insert tail and increase capacity.
+        root     = $Array.new(32); root.prop(0) = tail
+        capacity = capacity * 32
+      }
+      else if _count - 32 >= capacity {
+        -- Insert tail into an empty tree of the same depth as the current tree.
+        let node = tail
+        for c = capacity; c > 32; c = c / 32 {
+          let node' = $Array.new(32); node'.prop(0) = node; node = node'
+        }
+
+        -- Build new root.
+        let root' = $Array.new(32)
+        root'.prop(0) = root
+        root'.prop(1) = node
+
+        -- Update array with new root node and capacity.
+        root = root'
+        capacity = capacity * 32
+      }
+      else {
+        -- Create copy of root node if we don't own it.
+        if root.$version ~= version {
+          root = root.$slice(); root.$version = version
+        }
+
+        -- Iteration context.
+        let segment = root
+        let subcap  = capacity / 32
+        let index   = _count - 32       -- Index of first element in tail.
+        let bindex  = Math.floor(index / subcap)
+
+        -- Iterate down to the last non leaf node.
+        while subcap > 32 {
+          -- Fetch sub branch node.
+          let segment' = segment.prop(bindex)
+
+          -- If we don't have a branch to traverse into, create a new one.
+          if segment' == nil {
+            segment' = $Array.new(32); segment'.$version = version
+            segment.prop(bindex) = segment'
+          }
+
+          -- Copy sub branch node if we don't own it.
+          if segment'.$version ~= version {
+            segment' = segment'.$slice(); segment'.$version = version
+            segment.prop(bindex) = segment'
+          }
+
+          -- Descend into the next branch.
+          segment = segment'
+          index   = index % subcap
+          subcap  = subcap / 32
+          bindex  = Math.floor(index / subcap)
+        }
+
+        -- Append tail to branch node.
+        segment.prop(bindex) = tail
+      }
+
+      -- Create new tail and append value into it.
+      tail         = $Array.new(32); tail.$version = version
+      tail.prop(0) = value
+      _count       = _count + 1
+      tail_count   = 0
+    }
+    else {
+      -- Copy tail if we don't own it.
+      if tail.$version ~= version {
+        tail = tail.$slice(); tail.$version = version
+      }
+
+      -- Append value into tail.
+      tail.prop(tindex) = value
+      _count            = _count + 1
+      tail_count        = tail_count + 1
+    }
+
+    return self
+  }
+
+  public unappend do copy.unappend!
+  public unappend! {
+    if tail_count == 0 {
+      -- Copy root if we don't own it.
+      if root.$version ~= version {
+        root = root.$slice(); root.$version = version
+      }
+
+      -- Iteration context.
+      let parent  = nil
+      let segment = root
+      let subcap  = capacity / 32
+      let index   = _count - 1
+      let bindex  = Math.floor(index / subcap)
+      let pindex  = -1
+
+      -- Iterate down to the last non leaf node.
+      while subcap > 32 {
+        -- Fetch sub branch node.
+        let segment' = segment.prop(bindex)
+
+        -- Copy sub branch if we don't own it.
+        if segment'.$version ~= version {
+          segment' = segment'.$slice(); segment'.$version = version
+          segment.prop(bindex) = segment'
+        }
+
+        -- Descend into sub branch node.
+        parent = segment
+        segment = segment'
+        pindex  = bindex
+        index   = index % subcap
+        subcap  = subcap / 32
+        bindex  = Math.floor(index / subcap)
+
+        -- Remove sub branch node if it became empty.
+        if bindex == 0 and index == 31 {
+          parent.prop(pindex) = nil
+        }
+      }
+
+      -- Pull out leaf node as tail.
+      tail       = segment.prop(bindex); segment.prop(bindex) = nil
+      tail_count = 32
+    }
+
+    -- Reduce tree depth as necessary.
+    if capacity > 32 * 32 and root.prop(1) == nil {
+      root     = root.prop(0)
+      capacity = capacity / 32
+    }
+
+    -- Copy tail if we don't own it.
+    if tail.$version ~= version {
+      tail = tail.$slice(); tail.$version = version
+    }
+
+    -- Remove element from tail.
+    tail.prop(tail_count) = nil
+    tail_count            = tail_count - 1
+    _count                = _count - 1
+
+    return self
+  }
+
+  public prepend(value)  do            [value].append_all(self)
+  public prepend!(value) do transmute!([value].append_all(self))
+
+  public unprepend  do            drop(1)
+  public unprepend! do transmute!(drop(1))
+
+  public insert(index, value)  do            [].append_all!(take(index)).append!(value).append_all!(drop_index)
+  public insert!(index, value) do transmute!([].append_all!(take(index)).append!(value).append_all!(drop_index))
+
+  public uninsert(index)  do            [].append_all!(take(index)).append_all!(drop(index + 1))
+  public uninsert!(index) do transmute!([].append_all!(take(index)).append_all!(drop(index + 1)))
+
+  public remove(value)  do            reject([e] -> e == value)
+  public remove!(value) do transmute!(reject([e] -> e == value))
+
+  public remove_first(value) {
+    let result = []
+    let index  = 0
+    while index < _count {
+      break if self[index] == value
+      result.append!(self[index])
+      index = index + 1
+    }
+    while index < _count {
+      result.append!(self[index])
+      index = index + 1
+    }
+    return result
+  }
+  public remove_first!(value) do transmute!(remove_first(value))
+
+  public append_all(values)  do values.fold(copy, [a, v] -> a.append!(v))
+  public append_all!(values) do values.fold(self, [a, v] -> a.append!(v))
+
+  public prepend_all(values)  do            [].append_all!(values).append_all!(self)
+  public prepend_all!(values) do transmute!([].append_all!(values).append_all!(self))
+
+  public insert_all(index, values)  do            [].append_all!(take(index)).append_all!(values).append_all!(drop(index))
+  public insert_all!(index, values) do transmute!([].append_all!(take(index)).append_all!(values).append_all!(drop(index)))
+
+  public uninsert_all(indices)  do            reject([v, i] -> indices.include?(i))
+  public uninsert_all!(indices) do transmute!(reject([v, i] -> indices.include?(i)))
+
+  public remove_all(values)  do            reject([v, i] -> values.include?(v))
+  public remove_all!(values) do transmute!(reject([v, i] -> values.include?(v)))
+
+  public append_if_absent(value)  do (include?(value) ? self : append(value))
+  public append_if_absent!(value) do (include?(value) ? self : append!(value))
+
+
+  public slice(start, end, step) {
+    let array = []
+    for i = start; i < end; i = i + step {
+      array.append!(self[i])
+    }
+    return array
+  }
+
+
+  public take(count') do slice(0, count')
+  public drop(count') do slice(count', _count)
+
+  public take_last(count') do slice(_count - count', _count)
+  public drop_last(count') do slice(0, _count - count')
+
+  public split(index) do Vector[take(index), drop(index)]
+
+
+  public fold(accumulator, reducer) {
+    if reducer == nil {
+      reducer     = accumulator
+      accumulator = self[0]
+      for i = 1, c = _count; i < c; i = i + 1 {
+        accumulator = reducer[accumulator, self[i], i]
+      }
+      return accumulator
+    }
+    else {
+      for i = 0, c = _count; i < c; i = i + 1 {
+        accumulator = reducer[accumulator, self[i], i]
+      }
+      return accumulator
+    }
+  }
+  public fold_last(accumulator, reducer) {
+    if reducer == nil {
+      reducer     = accumulator
+      accumulator = last(0)
+      for i = 1, c = _count; i < c; i = i + 1 {
+        accumulator = reducer[accumulator, last(i), i]
+      }
+      return accumulator
+    }
+    else {
+      for i = 0, c = _count; i < c; i = i + 1 {
+        accumualtor = reducer[accumulator, last(i), i]
+      }
+      return accumulator
+    }
+  }
+
+
+  public empty  do []
+  public a ++ b do a.append_all(b)
+
+
+  public a == b {
+    return false unless a._count == b._count
+    let a_enum = a.enumerate
+    let b_enum = b.enumerate
+    for i = 0, c = a._count; i < c; i = i + 1 {
+      return false unless a_enum.value == b_enum.value
+      a_enum.next!
+      b_enum.next!
+    }
+    return true
+  }
+  public a ~= b {
+    return true unless a._count == b._count
+    let a_enum = a.enumerate
+    let b_enum = b.enumerate
+    for i = 0, c = a._count; i < c; i = i + 1 {
+      return true unless a_enum.value == b_enum.value
+      a_enum.next!
+      b_enum.next!
+    }
+    return false
+  }
+  public a < b {
+    let a_enum = a.enumerate
+    let b_enum = b.enumerate
+    for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
+      return false unless a_enum.value <= b_enum.value
+      a_enum.next!
+      b_enum.next!
+    }
+    return false unless a._count < b._count
+    return true
+  }
+  public a > b {
+    let a_enum = a.enumerate
+    let b_enum = b.enumerate
+    for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
+      return false unless a_enum.value >= b_enum.value
+      a_enum.next!
+      b_enum.next!
+    }
+    return false unless a._count > b._count
+    return true
+  }
+  public a <= b {
+    let a_enum = a.enumerate
+    let b_enum = b.enumerate
+    for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
+      return false unless a_enum.value <= b_enum.value
+      a_enum.next!
+      b_enum.next!
+    }
+    return false unless a._count <= b._count
+    return true
+  }
+  public a >= b {
+    let a_enum = a.enumerate
+    let b_enum = b.enumerate
+    for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
+      return false unless a_enum.value >= b_enum.value
+      a_enum.next!
+      b_enum.next!
+    }
+    return false unless a._count >= b._count
+    return true
+  }
+  public a <> b {
+    let a_enum = a.enumerate
+    let b_enum = b.enumerate
+    for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
+      return  1 if a_enum.value < b_enum.value
+      return -1 if a_enum.value > b_enum.value
+      a_enum.next!
+      b_enum.next!
+    }
+    return  1 if a._count < b._count
+    return -1 if a._count > b._count
+    return  0
+  }
+
+
+  public set_or(other) {
+    let array = self.copy
+    each e in other do array.append_if_absent!(e)
+    return array
+  }
+  public set_xor(other) {
+    let array = []
+    each e in self  do array.append!(e) if b.exclude?(e)
+    each e in other do array.append!(e) if a.exclude?(e)
+    return array
+  }
+  public set_and(other) {
+    let array = []
+    each e in self do array.append!(e) if other.include?(e)
+    return array
+  }
+  public set_sub(other) {
+    let array = []
+    each e in other do array.append!(e) if other.exclude?(e)
+    return array
+  }
+
+
+  public pad(pad_count, pad_value) do copy.pad!(pad_count, pad_value)
+  public pad!(pad_count, pad_value) {
+    for i = _count; i < pad_count; i = i + 1 do append!(pad_value)
+    return self
+  }
+
+
+  public each(action) {
+    each e, i in self do action[e, i]
+  }
+  public map(transformer) {
+    let array = []
+    for e, i in self do array.append!(transformer[e, i])
+    return array
+  }
+
+
+  public find(value) {
+    if Proc.include?(value)
+    then return find_satisfy(value)
+    else return find_satisfy([e] -> e == value)
+  }
+  private find_satisfy(predicate) {
+    each e, i in self {
+      return Maybe.Just[i] if predicate[e, i]
+    }
+    return Maybe.Nothing
+  }
+  public select(predicate) {
+    let array = []
+    for e, i in self do array.append!(e) if predicate[e, i]
+    return array
+  }
+  public reject(predicate) {
+    let array = []
+    for e, i in self do array.append!(e) if not predicate[e, i]
+    return array
+  }
+
+
+  public select_duplicates {
+    let originals  = []
+    let duplicates = []
+
+    each e in self {
+      if originals.include?(e)
+      then duplicates.append!(e)
+      else originals.append!(e)
+    }
+
+    return duplicates
+  }
+  public reject_duplicates {
+    let array = []
+    each e in self do array.append!(e) if array.exclude?(e)
+    return array
+  }
+
+
+  public count(value) {
+    return _count if value == nil
+
+    if Proc.include?(value)
+    then return count_satisfy(value)
+    else return count_satisfy([e] -> e == value)
+  }
+  private count_satisfy(predicate) {
+    let c = 0
+    each e, i in self do c = c + 1 if predicate[e, i]
+    return c
+  }
+
+
+  public include?(value) {
+    each e in self do return true if e == value
+    return false
+  }
+  public exclude?(value) {
+    each e in self do return false if e == value
+    return true
+  }
+
+
+  public any?(predicate) {
+    each e, i in self do return true if predicate[e, i]
+    return false
+  }
+  public exception?(predicate) {
+    each e, i in self do return true unless predicate[e, i]
+    return false
+  }
+  public all?(predicate) {
+    each e, i in self do return false unless predicate[e, i]
+    return true
+  }
+  public none?(predicate) {
+    each e, i in self do return false if predicate[e, i]
+    return true
+  }
+
+
+  public partition(predicate) {
+    let selected = []
+    let rejected = []
+    each e, i in self {
+      if predicate[e, i]
+      then selected.append!(e)
+      else rejected.append!(e)
+    }
+    return Vector[selected, rejected]
+  }
+  public pivot(unary_comparator) {
+    let below = []
+    let equal = []
+    let above = []
+    each e, i in self {
+      match unary_compatator[e, i] {
+        case -1 do below.append!(e)
+        case  0 do equal.append!(e)
+        case  1 do above.append!(e)
+      }
+    }
+    return Vector[below, equal, above]
+  }
+  public group(categorizer) {
+    let dictionary = {}
+    each e, i in self {
+      let category = categorizer[e, i]
+      let elements = dictionary[category, nil]
+      elements = dictionary[category] = [] if elements == nil
+      elements.append!(e)
+    }
+    return dictionary
+  }
+
+
+  public step(step_count) {
+    let array = []
+    each e, i in self {
+      array.append!(e) if i rem step_count == 0
+    }
+    return array
+  }
+  public step_exact(step_count) {
+    raise "domain_error" unless count rem step_count == 0
+    return step(step_count)
+  }
+  public step_total(step_count) {
+    raise "domain_error" unless count rem step_count == 1
+    return step(step_count)
+  }
+
+
+  public chunks(step_count) {
+    let chunks  = []
+    let current = []
+    each e in self {
+      if current.count == step_count {
+        chunks.append!(current)
+        current = []
+      }
+      current.append!(e)
+    }
+    return chunks.append!(e)
+  }
+  public chunks_exact(step_count) {
+    raise "domain_error" unless count rem step_count == 0
+    return chunks(step_count)
+  }
+  public chunks_truncate(step_count) {
+    let chunks  = []
+    let current = []
+    each e in self {
+      if current.count == step_count {
+        chunks.append!(current)
+        current = []
+      }
+      current.append!(e)
+    }
+    if current.count == step_count
+    then return chunks.append!(current)
+    else return chunks
+  }
+  public chunks_pad(step_count) {
+    let chunks  = []
+    let current = []
+    each e in self {
+      if current.count == step_count {
+        chunks.append!(current)
+        current = []
+      }
+      current.append!(e)
+    }
+    return chunks.append!(current.pad!(step_count, pad_value))
+  }
+
+
+  public flat1 {
+    let array = []
+    each e in self do array.append_all!(e)
+    return array
+  }
+  public flat {
+    return flat_into([])
+  }
+  public flat_into(array) {
+    each e in self {
+      if Array.include?(e)
+      then e.flat_into(array)
+      else array.append!(e)
+    }
+    return array
+  }
+
+
+  public join(seperator) {
+    let result = seperator.empty
+    each e in self do result = result ++ seperator ++ e
+    return result
+  }
+
+}

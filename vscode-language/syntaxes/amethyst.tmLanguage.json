@@ -1,0 +1,137 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Amethyst",
+	"patterns": [
+		{
+			"name": "comment.line.amethyst",
+			"match": "--[^\\n\\r]*(\\r\\n?|\\n\\r?)"
+		},
+		{
+			"include": "#amethyst_main"
+		}
+	],
+	"repository": {
+		"amethyst_main": {
+			"patterns": [
+				{
+					"include": "#amethyst_block_comment"
+				},
+				{
+					"name": "meta.identifier.amethyst",
+					"match": "[A-Za-z_][A-Za-z0-9_]*[']*[?!]?(?=:)"
+				},
+				{
+					"name": "meta.identifier.amethyst",
+					"match": "(?<=public )(?!static)[A-Za-z_][A-Za-z0-9_]*[']*[?!]?"
+				},
+				{
+					"name": "meta.identifier.amethyst",
+					"match": "(?<=private )(?!static)[A-Za-z_][A-Za-z0-9_]*[']*[?!]?"
+				},
+				{
+					"name": "meta.identifer.amethyst",
+					"match": "(?<=static )[A-Za-z_][A-Za-z0-9_]*[']*[?!]?"
+				},
+				{
+					"name": "keyword.control.amethyst",
+					"match": "(?<!\\.)(if|unless|then|else|forever|while|until|for|each|in|do|raise|return|break|continue)(?![A-Za-z0-9_'?!])"
+				},
+				{
+					"name": "keyword.operator.word.amethyst",
+					"match": "(?<!\\.)(is|and|or|xor|not|quo|rem|exp|fquo|frem|cquo|crem)(?![A-Za-z0-9_'?!])"
+				},
+				{
+					"name": "keyword.other.amethyst",
+					"match": "(?<!\\.)(class|public|private|static|let|proc|use|self|priv)(?![A-Za-z0-9_'?!])"
+				},
+				{
+					"name": "constant.language.amethyst",
+					"match": "(?<!\\.)(true|false|nil)(?![A-Za-z0-9_'?!])"
+				},
+				{
+					"name": "constant.numeric.float.amethyst",
+					"match": "([0-9][0-9_]*.[0-9][0-9_]*([eE][0-9][0-9_])?)(?![A-Za-z0-9_'?!])"
+				},
+				{
+					"name": "constant.numeric.integer.hex.amethyst",
+					"match": "(0x([0-9A-Fa-f][0-9A-Fa-f_]*))(?![A-Za-z0-9_'?!])"
+				},
+				{
+					"name": "constant.numeric.integer.oct.amethyst",
+					"match": "(0o([0-7][0-7_]*))(?![A-Za-z0-9_'?!])"
+				},
+				{
+					"name": "constant.numeric.integer.bin.amethyst",
+					"match": "(0b([0-1][0-1_]*))(?![A-Za-z0-9_'?!])"
+				},
+				{
+					"name": "constant.numeric.integer.dec.amethyst",
+					"match": "(([0-9][0-9_]*))(?![A-Za-z0-9_'?!])"
+				},
+				{
+					"name": "entity.name.class.amethyst",
+					"match": "(?<!\\.)([A-Z][A-Za-z0-9_]*)(?![A-Za-z0-9_'?!])"
+				},
+				{
+					"name": "meta.identifier.amethyst",
+					"match": "[A-Za-z_][A-Za-z0-9_]*[']*[?!]?"
+				},
+				{
+					"name": "string.quoted.double.amethyst",
+					"begin": "\"",
+					"end": "\"",
+					"patterns": [
+						{
+							"name": "constant.character.escape.amethyst",
+							"begin": "{{",
+							"end": "}}",
+							"contentName": "meta.embedded.amethyst",
+							"patterns": [
+								{
+									"include": "#amethyst_main"
+								}
+							]
+						},
+						{
+							"name": "constant.character.escape.amethyst",
+							"match": "\\\\x[0-9A-Fa-f][0-9A-Fa-f]"
+						},
+						{
+							"name": "constant.character.escape.amethyst",
+							"match": "\\\\u[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]"
+						},
+						{
+							"name": "constant.character.escape.amethyst",
+							"match": "\\\\U\\+[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]"
+						},
+						{
+							"name": "constant.character.escape.amethyst",
+							"match": "\\\\."
+						}
+					]
+				},
+				{
+					"name": "meta.enclosed.amethyst",
+					"begin": "\\(\\[\\{",
+					"end": "\\)\\]\\}",
+					"patterns": [
+						{
+							"include": "#amethyst_main"
+						}
+					]
+				}
+			]
+		},
+		"amethyst_block_comment": {
+			"name": "comment.block.amethyst",
+			"begin": "{#",
+			"end": "#}",
+			"patterns": [
+				{
+					"include": "#amethyst_block_comment"
+				}
+			]
+		}
+	},
+	"scopeName": "source.amethyst"
+}
