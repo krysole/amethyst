@@ -19,11 +19,7 @@
 -- TODO
 -- Some of the code in here uses some basic pattern matching. I will
 -- probably have to implement at least that much unless I'm ok rewriting
--- the code later, or just using something else anyway.
-
--- TODO
--- Operator definitions need to be implemented properly for this to
--- compile.
+-- the code later, or just using something else altogether.
 
 -- TODO
 -- Several of the methods in here are missing error handling. In fact, I think
@@ -538,11 +534,11 @@ class Array (Object) {
   }
 
 
-  public empty  do []
-  public a ++ b do a.append_all(b)
+  public empty       do []
+  operator ++ (a, b) do a.append_all(b)
 
 
-  public a == b {
+  operator == (a, b) {
     return false unless a._count == b._count
     let a_enum = a.enumerate
     let b_enum = b.enumerate
@@ -553,7 +549,7 @@ class Array (Object) {
     }
     return true
   }
-  public a ~= b {
+  operator ~= (a, b) {
     return true unless a._count == b._count
     let a_enum = a.enumerate
     let b_enum = b.enumerate
@@ -564,7 +560,7 @@ class Array (Object) {
     }
     return false
   }
-  public a < b {
+  operator < (a, b) {
     let a_enum = a.enumerate
     let b_enum = b.enumerate
     for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
@@ -575,7 +571,7 @@ class Array (Object) {
     return false unless a._count < b._count
     return true
   }
-  public a > b {
+  operator > (a, b) {
     let a_enum = a.enumerate
     let b_enum = b.enumerate
     for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
@@ -586,7 +582,7 @@ class Array (Object) {
     return false unless a._count > b._count
     return true
   }
-  public a <= b {
+  operator <= (a, b) {
     let a_enum = a.enumerate
     let b_enum = b.enumerate
     for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
@@ -597,7 +593,7 @@ class Array (Object) {
     return false unless a._count <= b._count
     return true
   }
-  public a >= b {
+  operator >= (a, b) {
     let a_enum = a.enumerate
     let b_enum = b.enumerate
     for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
@@ -608,7 +604,7 @@ class Array (Object) {
     return false unless a._count >= b._count
     return true
   }
-  public a <> b {
+  operator <> (a, b) {
     let a_enum = a.enumerate
     let b_enum = b.enumerate
     for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
@@ -762,7 +758,7 @@ class Array (Object) {
     let equal = []
     let above = []
     each e, i in self {
-      match unary_compatator[e, i] {
+      given unary_compatator[e, i] match {
         case -1 do below.append!(e)
         case  0 do equal.append!(e)
         case  1 do above.append!(e)

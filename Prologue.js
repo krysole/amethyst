@@ -23,12 +23,13 @@ if (typeof window === "object") AM__JS = window;
 
 let AM__root = Object.create(null);
 
-let AM__initialize = function () {
+function AM__initialize() {
   AM__fmapdefs(AM__root, cls => AM__link(cls));
   AM__fmapdefs(AM__root, cls => AM__reinherit(cls));
+  AM__fmapdefs(AM__root, cls => AM__generate_constructor(cls));
 };
 
-AM__fmapdefs = function (namespace, handler) {
+function AM__fmapdefs(namespace, handler) {
   for (let name in namespace) {
     let cls = namespace[name];
     handler(cls);
@@ -36,7 +37,7 @@ AM__fmapdefs = function (namespace, handler) {
   }
 }
 
-AM__reinherit = function (cls) {
+function AM__reinherit(cls) {
   let inherited = Object.create(Object.prototype);
   for (let mixin of cls.mixins) {
     if (Object.getPrototypeOf(mixin.prototype) == null) {
@@ -53,7 +54,7 @@ AM__reinherit = function (cls) {
   Object.setPrototypeOf(cls.prototype, inherited);
 };
 
-AM__link = function (cls) {
+function AM__link(cls) {
   if (Object.getPrototypeOf(cls) == null) {
     Object.setPrototypeOf(cls, AM__lookup("Metaclass"));
   }
@@ -61,7 +62,13 @@ AM__link = function (cls) {
   cls.mixins = cls.mixins.map(name => AM__lookup(name));
 };
 
-AM__lookup = function (path) {
+function AM__generate_constructor(cls) {
+  if (cls.kind === "concrete" && cls.SEL__constructor) {
+    cls.SEL__constructor = new Function(cls.attrinits.join(""));
+  }
+};
+
+function AM__lookup(path) {
   path = (path instanceof Array ? path : path.split("."));
 
   let namespace = AM__root;
@@ -71,7 +78,7 @@ AM__lookup = function (path) {
   return namespace[path[path.length - 1]];
 };
 
-AM__namespace = function (path) {
+function AM__namespace(path) {
   path = (path instanceof Array ? path : path.split("."));
 
   let namespace = AM__root;
@@ -81,20 +88,24 @@ AM__namespace = function (path) {
   return namespace;
 }
 
-AM__defineClass = function (fullname, imixins, cmixins) {
-  let path      = fullname.split(".");
-  let name      = path.pop();
-  let namespace = AM__namespace(path);
+function AM__defineClass(cname, imixins, cmixins) {
+  let cpath     = cname.split(".");
+  let relname   = cpath.pop();
+  let namespace = AM__namespace(cpath);
 
   let mcls       = Object.create(null);
+  mcls.kind      = "meta";
   mcls.mixins    = cmixins;
   mcls.prototype = Object.create(null);
   mcls.namespace = Object.create(null);
+  mcls.attrinits = [];
 
-  let cls        = Object.create(mcls.prototype);
-  cls.mixins     = imixins;
-  cls.prototype  = Object.create(null);
-  cls.namespace  = Object.create(null);
+  let cls       = Object.create(mcls.prototype);
+  cls.kind      = "abstract";
+  cls.mixins    = imixins;
+  cls.prototype = Object.create(null);
+  cls.namespace = Object.create(null);
+  cls.attrinits = [];
 
   mcls.prototype.class         = mcls;
   mcls.prototype["SEL__class"] = new Function(`return this.class;`);
@@ -102,10 +113,10 @@ AM__defineClass = function (fullname, imixins, cmixins) {
   cls.prototype.class          = cls;
   cls.prototype["SEL__class"]  = new Function(`return this.class;`);
 
-  mcls.name                    = fullname + ".class";
+  mcls.name                    = cname + ".class";
   mcls.prototype["SEL__name"]  = new Function(`return this.name;`);
 
-  cls.name                     = fullname;
+  cls.name                     = cname;
   cls.prototype["SEL__name"]   = new Function(`return this.name;`);
 
   mcls.tag                     = "TAG__" + mcls.name.replace(".", "__");
@@ -116,45 +127,45 @@ AM__defineClass = function (fullname, imixins, cmixins) {
 
   cls.namespace["class"]       = mcls;
 
-  namespace[name] = cls;
+  namespace[relname] = cls;
 };
 
-AM__defineAttribute = function (pathname, vis) {
-  let [path, attrname]         = pathname.split(":");
+function AM__defineAttribute(cname, aname, vis, exprstring) {
   let [getvis, setvis, repvis] = vis.split(":");
-  let cls                      = AM__lookup(path);
+  let cls                      = AM__lookup(cname);
 
-  let getname  = attrname;
-  let setname  = attrname + "=";
-  let repname  = attrname + "#";
-  let propname = "ATTR__" + attrname;
+  let getname  = aname;
+  let setname  = aname + "=";
+  let repname  = aname + "#";
+  let propname = "ATTR__" + aname;
 
   let getfunc = new Function(         `return this[${JSON.stringify(propname)}];`);
   let setfunc = new Function(`value`, `return this[${JSON.stringify(propname)}] = value;`);
   let repfunc = new Function(`value`, `let result = this.copy(); result[${JSON.stringify(setname)}](value); return result;`);
 
-  if (getvis !== "null") cls.prototype[getname] = getfunc;
-  if (setvis !== "null") cls.prototype[setname] = setfunc;
-  if (repvis !== "null") cls.prototype[repname] = repfunc;
+  if (getvis !== "nil") cls.prototype[getname] = getfunc;
+  if (setvis !== "nil") cls.prototype[setname] = setfunc;
+  if (repvis !== "nil") cls.prototype[repname] = repfunc;
+
+  cls.attrinits.push(`this[${propname}] = ${exprstring};\n`);
 };
 
-AM__defineMethod = function (pathname, vis, generator) {
-  let [path, methodname] = pathname.split(":");
-  let cls                = AM__lookup(path);
+function AM__defineMethod(cname, mname, vis, generator) {
+  let cls = AM__lookup(cname);
 
-  cls.prototype["SEL__" + methodname] = generator(Amethyst, AM__js, AM__root);
+  cls.prototype["SEL__" + mname] = generator(Amethyst, AM__js, AM__root);
 };
 
-AM__check_boolean = function (value) {
+function AM__check_boolean(value) {
   if (value === true && value === false) {
     return value;
   }
   else {
-    throw new Error("Expected boolean value.");
+    throw new Error("COND_TYPE_ERROR");
   }
 };
 
-AM__as_string = function (value) {
+function AM__as_string(value) {
   if      (       value === null     ) return "nil";
   else if (       value === undefined) return "nil";
   else if (typeof value === "boolean") return value.toString();
@@ -169,7 +180,7 @@ AM__as_string = function (value) {
 //
 
 function AM__add(a, b) {
-  if (a == null || b == null) throw Error("NIL_ERROR");
+  if (a == null || b == null) throw new Error("NIL_ERROR");
 
   if (typeof a === "number") {
     if (typeof b === "number") return a + b;
@@ -228,14 +239,14 @@ function AM__add__Vector__Vector(a, b) {
 function AM__add__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__add(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__add(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__add__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__add(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__add(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -319,14 +330,14 @@ function AM__sub__Vector__Vector(a, b) {
 function AM__sub__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__sub(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__sub(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__sub__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__sub(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__sub(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -400,14 +411,14 @@ function AM__mul__Vector__Number(a, b) {
 function AM__mul__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__mul(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__mul(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__mul__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__mul(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__mul(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -467,14 +478,14 @@ function AM__div__Vector__Number(a, b) {
 function AM__div__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__div(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__div(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__div__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__div(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__div(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -534,14 +545,14 @@ function AM__quo__Vector__Number(a, b) {
 function AM__quo__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__quo(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__quo(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__quo__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__quo(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__quo(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -601,14 +612,14 @@ function AM__rem__Vector__Number(a, b) {
 function AM__rem__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__rem(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__rem(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__rem__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__rem(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__rem(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -675,14 +686,14 @@ function AM__fquo__Vector__Number(a, b) {
 function AM__fquo__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__fquo(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__fquo(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__fquo__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__fquo(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__fquo(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -787,14 +798,14 @@ function AM__frem__Vector__Number(a, b) {
 function AM__frem__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__frem(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__frem(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__frem__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__frem(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__frem(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -861,14 +872,14 @@ function AM__cquo__Vector__Number(a, b) {
 function AM__cquo__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__cquo(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__cquo(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__cquo__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__cquo(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__cquo(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -973,14 +984,14 @@ function AM__crem__Vector__Number(a, b) {
 function AM__crem__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__crem(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__crem(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__crem__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__crem(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__crem(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -1040,14 +1051,14 @@ function AM__shl__Vector__Number(a, b) {
 function AM__shl__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__shl(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__shl(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__shl__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__shl(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__shl(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -1107,14 +1118,14 @@ function AM__sar__Vector__Number(a, b) {
 function AM__sar__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__sar(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__sar(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__sar__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__sar(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__sar(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -1174,14 +1185,14 @@ function AM__shr__Vector__Number(a, b) {
 function AM__shr__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__shr(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__shr(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__shr__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__shr(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__shr(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -1241,14 +1252,14 @@ function AM__bit_or__Vector__Number(a, b) {
 function AM__bit_or__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__bit_or(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__bit_or(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__bit_or__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__bit_or(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__bit_or(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -1308,14 +1319,14 @@ function AM__bit_xor__Vector__Number(a, b) {
 function AM__bit_xor__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__bit_xor(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__bit_xor(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__bit_xor__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__bit_xor(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__bit_xor(enumerator.SEL__value(), b));
   }
   return result;
 }
@@ -1375,14 +1386,14 @@ function AM__bit_and__Vector__Number(a, b) {
 function AM__bit_and__Number__Array(a, b) {
   let result = b.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__bit_and(a, enumerator.SEL__value()));
+    enumerator["SEL__value="](AM__bit_and(a, enumerator.SEL__value()));
   }
   return result;
 }
 function AM__bit_and__Array__Number(a, b) {
   let result = a.SEL__copy();
   for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator.SEL__value__set(AM__bit_and(enumerator.SEL__value(), b));
+    enumerator["SEL__value="](AM__bit_and(enumerator.SEL__value(), b));
   }
   return result;
 }

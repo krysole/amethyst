@@ -41,12 +41,18 @@ grammar Parser {
     !{ tag: "Method", name: x.name, vis: p, static: s, parameters: [], sparam: x.parameter, body: b }
   | vis:p static?:s "[" plist:ps "]"      sparam("[]"):x    pbody:b
     !{ tag: "Method", name: x.name, vis: p, static: s, parameters: ps, sparam: x.parameter, body: b }
+
+  | "operator" static?:s infixOperator:o "(" local:a "," local:b ")" pbody:b
+    !{ tag: "Plain_Parameter", name: a }:ap
+    !{ tag: "Plain_Parameter", name: b }:bp
+    !{ tag: "Operator", name: o, static: s, parameters: [ap, bp], body: b }
+
   | vis:gp ":" vis:sp ":" vis:rp static?:s ID:n ( "=" expression | !null ):e
-    !{ tag: "Accessor", name: n.text, get: gp, set: sp, rep: rp,   static: s, value: e }
+    !{ tag: "Attribute", name: n.text, get: gp, set: sp, rep: rp,   static: s, value: e }
   | vis:gp ":" vis:sp            static?:s ID:n ( "=" expression | !null ):e
-    !{ tag: "Accessor", name: n.text, get: gp, set: sp, rep: null, static: s, value: e }
+    !{ tag: "Attribute", name: n.text, get: gp, set: sp, rep: null, static: s, value: e }
   | vis:p                        static?:s ID:n ( "=" expression | !null ):e
-    !{ tag: "Accessor", name: n.text, get: p,  set: p,  rep: null, static: s, value: e }
+    !{ tag: "Attribute", name: n.text, get: p,  set: p,  rep: null, static: s, value: e }
   }
 
 
@@ -54,7 +60,7 @@ grammar Parser {
   | letStatement
   | ifStatement
   | unlessStatement
-  | matchStatement
+  | givenStatement
   | onceStatement
   | foreverStatement
   | whileStatement
@@ -66,6 +72,7 @@ grammar Parser {
   | breakStatement
   | continueStatement
   | returnStatement
+  | raiseStatement
   | expressionStatement
   }
   bstatement {
@@ -73,6 +80,7 @@ grammar Parser {
   | breakStatement:s           !{ tag: "Block", statements: [s] }
   | continueStatement:s        !{ tag: "Block", statements: [s] }
   | returnStatement:s          !{ tag: "Block", statements: [s] }
+  | raiseStatement:s           !{ tag: "Block", statements: [s] }
   | ~"{" expressionStatement:s !{ tag: "Block", statements: [s] }
   }
 
@@ -97,9 +105,9 @@ grammar Parser {
   | "else" unlessStatement
   | "else" bstatement
   }
-  matchStatement {
-    "match" expression:s mbody:cs
-    !{ tag: "S_Match", subject: s, cases: cs }
+  givenStatement {
+    "given" expression:s "match" mbody:cs
+    !{ tag: "S_Given", subject: s, cases: cs }
   }
   caseStatement {
   | "case" pattern:p
@@ -162,6 +170,10 @@ grammar Parser {
   returnStatement {
     "return" expression?:e
     !{ tag: "S_Return", expression: e }
+  }
+  raiseStatement {
+    "raise" expression?:e
+    !{ tag: "S_Raise", expression: e }
   }
   expressionStatement {
     ~"{" expression:e
@@ -371,6 +383,7 @@ grammar Parser {
     ?![
       "let",
       "if", "unless", "then", "else",
+      "given", "match",
       "once", "forever", "while", "until", "for", "each", "in",
       "break", "continue",
       "return",
