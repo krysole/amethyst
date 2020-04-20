@@ -17,21 +17,35 @@
 --
 
 -- TODO
--- Some of the code in here uses some basic pattern matching. I will
--- probably have to implement at least that much unless I'm ok rewriting
--- the code later, or just using something else altogether.
-
--- TODO
--- Several of the methods in here are missing error handling. In fact, I think
--- that almost all of the methods are to some degree. I should review them and
--- figure out how the errors should be reported. I believe that the deep crash
--- semantic should probably be the prefered approach, although that does
--- assume that any error is any one which way or the other to the user?
+--
+-- Should I do something about segment versions exceeding the 53 bit precision
+-- limit of JavaScript numbers?
+--
+-- I think there are two options for this kind of version tag problem, one is
+-- to increase the range of the number by changing the increment value used.
+-- If the increment is more than 1 then floats will naturally start using the
+-- exponent constructively instead of destructively.
+--
+-- The downside is that the increment value must be stored and accessed, and
+-- there is still an overflow possibility, albeit at something closer to
+-- 60 bits of precision instead of 53 bits.
+--
+-- Alternatively I could simply detect and raise an error and assume that the
+-- branch prediction will remove it in most cases.
+--
+-- Perhaps some amount of conditional compilation could even be used to allow
+-- users to run in fullcheck mode or limited check mode. That might be useful
+-- in other places as well, in addition to potential debugging hooks that
+-- might be exposed.
+--
+-- For now, it isn't likely to exceed that kind of precision even in
+-- production code so I'm just going to leave it until it looks like there
+-- is a good enough argument to do something about it.
 
 class Array (Object) {
 
   public static [] {
-    let array = self.$constructor.new()
+    let array = self.allocate
     for i = 0, c = $arguments.$length; i < c; i = i + 1 {
       array.append!($arguments.prop(i))
     }
@@ -50,7 +64,7 @@ class Array (Object) {
 
 
   public copy {
-    let array = Array.$constructor.new()
+    let array = Array.allocate
 
     version = version + 1
 
@@ -74,7 +88,7 @@ class Array (Object) {
   private transmute!(array) {
     -- 'transmute!' consumes the contents of another array object, which must not
     -- be used after invoking 'transmute!'. This is private to avoid posential
-    -- confusion, but like all private methods can be used if required.
+    -- confusion, but like all private methods it can be used when appropiate.
 
     -- TODO Figure out if there is a better name that is somewhat less confusing.
     --      Alternatively, see if there is a way of efficiently killing the other array.
@@ -102,6 +116,7 @@ class Array (Object) {
   public reverse! do transmute!(reverse)
 
 
+  -- TODO
   -- The purpose of Enumerator here isn't just for turning the iteration
   -- into a data structure, but is also intended to allow the enumerator
   -- implementation to remember where exactly it is in the tree, allowing
@@ -111,6 +126,7 @@ class Array (Object) {
   -- public ereverse ...
 
 
+  -- TODO
   -- This one is supposed to allow things like sort! to consume parts
   -- of the array during sorting by reusing the segments instead of
   -- allocating new ones. Generally new segments are allocated to keep
@@ -120,10 +136,12 @@ class Array (Object) {
   -- public consume!
 
 
+  -- TODO
   -- public sort  ...
   -- public sort! ...
 
 
+  -- TODO
   -- public shuffle  ...
   -- public shuffle! ...
 
@@ -143,6 +161,8 @@ class Array (Object) {
 
 
   public [index] {
+    if (index < 0 || index >= _count) raise "INDEX_ERROR";
+
     let tail_start = _count - tail_count
     let tail_index = index  - tail_start
     if tail_index >= 0 {
@@ -165,6 +185,8 @@ class Array (Object) {
     }
   }
   public [index] = value {
+    if (index < 0 || index >= _count) raise "INDEX_ERROR";
+
     let tail_start = _count - tail_count
     let tail_index = index  - tail_start
     if tail_index >= 0 {
@@ -200,6 +222,8 @@ class Array (Object) {
     }
   }
   public [index] # value {
+    if (index < 0 || index >= _count) raise "INDEX_ERROR";
+
     let v = copy
     v[index] = value
     return v

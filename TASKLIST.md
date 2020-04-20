@@ -1,6 +1,9 @@
 # TASKLIST #
 
-- Continue writing Array class.
+- Update Generate to include a kind argument to `AM__defineClass`.
+
+- Implement `Array_Enumerator` and `Array:enumerate`.
+- Ensure that all `Enumerator` classes support JavaScript enumerability.
 
 =======================================
 
@@ -11,6 +14,13 @@
   * Array, Dictionary, Set, Buffer (?)
   * Enumerator, Enumerable
 
+- Implement metamethods for the compile time type Basic (JS Objects).
+  * `[]`/`[]=` for convenience in addition to `prop`/`prop=`.
+  * `define?` for hasOwnProperty support.
+  * `include?` for `"property" in object` support.
+  * `remove!` for Basic objects, but not Amethyst objects.
+
+- Figure out a way to limit metamethods to specific compile time types.
 - Figure out a better syntax for attributes if possible.
 - Figure out if nil should have a class or not.
 - Figure out what I'm doing with `AM__as_string` in prelude.

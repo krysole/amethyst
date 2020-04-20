@@ -532,58 +532,69 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     if (ast.name === "~") ast.js = `${ast.a.js}.not()`;
   }
   else if (ast.tag === "E_Message") {
-    if (ast.recipient == null) {
-      if (ast.selector.match(/^[A-Z][A-Za-z0-9_]*$/)) {
-        if (ast.arguments.length !== 0) {
-          throw new Error("Global variable lookup expected zero arguments.");
-        }
-
-        if (ast.rep != null) {
-          throw new Error("Global variable lookup expected no replace argument.");
-        }
-
-        if (ast.set != null) {
-          throw new Error("Global variable lookup expected no set argument.");
-        }
-
-        ast.js = `AM__root.${ast.selector}`;
+    if (ast.recipient == null && ast.selector.match(/^[A-Z][A-Za-z0-9_]*$/)) {
+      if (ast.arguments.length !== 0) {
+        throw new Error("Global variable lookup expected zero arguments.");
       }
-      else if (Lookup(scope, ast.selector) != null) {
-        if (ast.arguments.length !== 0) {
-          throw new Error("Local variable lookup expected no arguments.");
-        }
 
-        if (ast.rep != null) {
-          throw new Error("Local variable lookup expected no replace argument.");
-        }
+      if (ast.rep != null) {
+        throw new Error("Global variable lookup expected no replace argument.");
+      }
 
-        if (ast.set == null) {
-          ast.js = `${Mangle(ast.selector)}`;
-        }
-        else {
-          Generate(ast.set, prefix, cls, method, loop, scope);
+      if (ast.set != null) {
+        throw new Error("Global variable lookup expected no set argument.");
+      }
 
-          ast.js = `(${Mangle(ast.selector)} = ${ast.set.js})`;
-        }
+      ast.js = `AM__root.${ast.selector}`;
+    }
+    else if (ast.recipient == null && Lookup(scope, ast.selector) != null) {
+      if (ast.arguments.length !== 0) {
+        throw new Error("Local variable lookup expected no arguments.");
+      }
+
+      if (ast.rep != null) {
+        throw new Error("Local variable lookup expected no replace argument.");
+      }
+
+      if (ast.set == null) {
+        ast.js = `${Mangle(ast.selector)}`;
       }
       else {
-        if (ast.rep != null) ast.selector += "#";
-        if (ast.set != null) ast.selector += "=";
+        Generate(ast.set, prefix, cls, method, loop, scope);
 
-        if (ast.rep != null) ast.arguments.push(ast.rep);
-        if (ast.set != null) ast.arguments.push(ast.set);
-
-        for (let argument of ast.arguments) {
-          Generate(argument, prefix, cls, method, loop, scope);
-        }
-
-        if (ast.selector.match(/^[A-Za-z0-9_]+(\?|\!)?$/)) {
-          ast.js = `this.${Mangle("SEL__" + ast.selector)}(${ast.arguments.map(a => a.js).join(", ")})`;
-        }
-        else {
-          ast.js = `this[${JSON.stringify("SEL__" + ast.selector)}](${ast.arguments.map(a => a.js).join(", ")})`;
-        }
+        ast.js = `(${Mangle(ast.selector)} = ${ast.set.js})`;
       }
+    }
+    else if (ast.selector === "new") { // METAMETHOD (new)
+      if (ast.recipient == null) throw new Error("'new' metamethod expected proc recipient.");
+      if (ast.rep       != null) throw new Error("'new' metamethod expected no replace argument.");
+      if (ast.set       != null) throw new Error("'new' metamethod expected no set argument.");
+
+      Generate(ast.recipient, prefix, cls, method, loop, scope);
+      for (let argument of ast.arguments) {
+        Generate(argument, prefix, cls, method, loop, scope);
+      }
+
+      let rcpt = ast.recipient.js;
+      let args = ast.arguments.map(a => a.js).join(", ");
+
+      ast.js = `(new ${rcpt}(${args}))`;
+    }
+    else if (ast.selector === "allocate") { // METAMETHOD (allocate)
+      if (ast.rep != null) throw new Error("allocate metamethod expected no replace argument.");
+      if (ast.set != null) throw new Error("allocate metamethod expected no set argument.");
+
+      if (ast.recipient != null) {
+        Generate(ast.recipient, prefix, cls, method, loop, scope);
+      }
+      for (let argument of ast.arguments) {
+        Generate(argument, prefix, cls, method, loop, scope);
+      }
+
+      let rcpt = (ast.recipient != null ? ast.recipient.js : "this");
+      let args = ast.arguments.map(a => a.js).join(", ");
+
+      ast.js = `(new ${rcpt}.constructor(${args}))`;
     }
     else if (ast.recipient.tag === "E_Super") {
       if (ast.rep != null) ast.selector += "#";
@@ -596,12 +607,11 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
         Generate(argument, prefix, cls, method, loop, scope);
       }
 
-      if (ast.selector.match(/^[A-Za-z0-9_]+(\?|\!)?$/)) {
-        ast.js = `Object.getPrototypeOf(this).${Mangle("SEL__" + ast.selector)}(${ast.arguments.map(a => a.js).join(", ")})`;
-      }
-      else {
-        ast.js = `Object.getPrototypeOf(this).${ast.recipient.js}[${JSON.stringify("SEL__" + ast.selector)}](${ast.arguments.map(a => a.js).join(", ")})`;
-      }
+      let sel  = JSON.stringify("SEL__" + ast.selector);
+      let args = ast.arguments.map(a => a.js).join(", ");
+      let sep  = (ast.argument.length === 0 ? "" : ", ");
+
+      ast.js = `Object.getPrototypeOf(this)[${sel}].call(this${sep}${args})`;
     }
     else {
       if (ast.rep != null) ast.selector += "#";
@@ -610,17 +620,18 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       if (ast.rep != null) ast.arguments.push(ast.rep);
       if (ast.set != null) ast.arguments.push(ast.set);
 
-      Generate(ast.recipient, prefix, cls, method, loop, scope);
+      if (ast.recipient != null) {
+        Generate(ast.recipient, prefix, cls, method, loop, scope);
+      }
       for (let argument of ast.arguments) {
         Generate(argument, prefix, cls, method, loop, scope);
       }
 
-      if (ast.selector.match(/^[A-Za-z0-9_]+(\?|\!)?$/)) {
-        ast.js = `${ast.recipient.js}.${Mangle("SEL__" + ast.selector)}(${ast.arguments.map(a => a.js).join(", ")})`;
-      }
-      else {
-        ast.js = `${ast.recipient.js}[${JSON.stringify("SEL__" + ast.selector)}](${ast.arguments.map(a => a.js).join(", ")})`;
-      }
+      let rcpt = ast.recipient.js;
+      let sel  = JSON.stringify("SEL__" + ast.selector);
+      let args = ast.arguments.map(a => a.js).join(", ");
+
+      ast.js = `${rcpt}[${sel}](${args})`;
     }
   }
   else if (ast.tag === "E_Property") {
@@ -630,7 +641,7 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       recipient = ast.recipient.js;
     }
     else {
-      recipient = `__JS`;
+      recipient = `AM__js`;
     }
 
     if (ast.set != null) {

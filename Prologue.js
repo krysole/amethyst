@@ -63,8 +63,8 @@ function AM__link(cls) {
 };
 
 function AM__generate_constructor(cls) {
-  if (cls.kind === "concrete" && cls.SEL__constructor) {
-    cls.SEL__constructor = new Function(cls.attrinits.join(""));
+  if (cls.kind === "concrete" && cls.constructor) {
+    cls.constructor = new Function(cls.attrinits.join(""));
   }
 };
 
@@ -88,24 +88,26 @@ function AM__namespace(path) {
   return namespace;
 }
 
-function AM__defineClass(cname, imixins, cmixins) {
+function AM__defineClass(cname, kind, imixins, cmixins) {
   let cpath     = cname.split(".");
   let relname   = cpath.pop();
   let namespace = AM__namespace(cpath);
 
-  let mcls       = Object.create(null);
-  mcls.kind      = "meta";
-  mcls.mixins    = cmixins;
-  mcls.prototype = Object.create(null);
-  mcls.namespace = Object.create(null);
-  mcls.attrinits = [];
+  let mcls         = Object.create(null);
+  mcls.kind        = "meta";
+  mcls.mixins      = cmixins;
+  mcls.prototype   = Object.create(null);
+  mcls.namespace   = Object.create(null);
+  mcls.attrinits   = [];
+  mcls.constructor = null;
 
-  let cls       = Object.create(mcls.prototype);
-  cls.kind      = "abstract";
-  cls.mixins    = imixins;
-  cls.prototype = Object.create(null);
-  cls.namespace = Object.create(null);
-  cls.attrinits = [];
+  let cls         = Object.create(mcls.prototype);
+  cls.kind        = kind;
+  cls.mixins      = imixins;
+  cls.prototype   = Object.create(null);
+  cls.namespace   = Object.create(null);
+  cls.attrinits   = [];
+  cls.constructor = null;
 
   mcls.prototype.class         = mcls;
   mcls.prototype["SEL__class"] = new Function(`return this.class;`);
