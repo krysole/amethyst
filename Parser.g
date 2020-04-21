@@ -29,8 +29,9 @@ grammar Parser {
   }
 
   classDeclaration {
-    "class" local:n mixins:ims mixins?:cms TERM? "{" mlist:ms "}"
-    !{ tag: "Class", name: n, imixins: ims, cmixins: cms, methods: ms }
+    "class" local:n mixins:ims mixins?:cms storage?:s TERM? "{" mlist:ms "}"
+    !(s != null ? s.text : "instance"):s
+    !{ tag: "Class", name: n, storage: s, imixins: ims, cmixins: cms, methods: ms }
   }
 
 
@@ -370,6 +371,10 @@ grammar Parser {
     ID:n ":" expression:v
     !{ tag: "E_String", value: n.text }:k
     !{ tag: "E_Keyval", key: k , value: v }
+  }
+  storage {
+  | "abstract" | "class" | "instance" | "basic" | "vector"
+  | "string" | "number" | "integer" | "boolean" | "nil"
   }
   slist {
   | INDENT ( ( statement ; ";" )*:ss ";"? TERM !ss )*:sss DEDENT !sss.flat()

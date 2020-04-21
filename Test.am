@@ -16,16 +16,12 @@
 -- OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS WORK.
 --
 
-class Object () {
-}
+class Object    () {}
+class Class     () {}
+class Metaclass () {}
 
-class Class (Object) {
-}
+class Test () abstract {
 
-class Metaclass (Object) {
-}
-
-class System (Object) {
   public static print(message) {
     $process.$stdout.$write(message)
   }

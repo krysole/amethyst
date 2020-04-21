@@ -195,8 +195,8 @@ function main() {
       appjs += prologue();
       appjs += ast.js;
       appjs += `\n`;
-      appjs += `Amethyst.initialize();\n`;
-      appjs += `Amethyst.root.${mainclass}.SEL__main(process.argv);\n`;
+      appjs += `AM__initialize();\n`;
+      appjs += `AM__root.${mainclass}["SEL__main"](process.argv);\n`;
       output(outputPath, appjs);
     }
   }

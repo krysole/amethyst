@@ -18,8 +18,8 @@
 "use strict";
 
 let AM__js;
-if (typeof global === "object") AM__JS = global;
-if (typeof window === "object") AM__JS = window;
+if (typeof global === "object") AM__js = global;
+if (typeof window === "object") AM__js = window;
 
 let AM__root = Object.create(null);
 
@@ -63,7 +63,7 @@ function AM__link(cls) {
 };
 
 function AM__generate_constructor(cls) {
-  if (cls.kind === "concrete" && cls.constructor) {
+  if (cls.storage === "instance" && cls.constructor) {
     cls.constructor = new Function(cls.attrinits.join(""));
   }
 };
@@ -88,13 +88,13 @@ function AM__namespace(path) {
   return namespace;
 }
 
-function AM__defineClass(cname, kind, imixins, cmixins) {
+function AM__defineClass(cname, storage, imixins, cmixins) {
   let cpath     = cname.split(".");
   let relname   = cpath.pop();
   let namespace = AM__namespace(cpath);
 
   let mcls         = Object.create(null);
-  mcls.kind        = "meta";
+  mcls.storage     = "class";
   mcls.mixins      = cmixins;
   mcls.prototype   = Object.create(null);
   mcls.namespace   = Object.create(null);
@@ -102,7 +102,7 @@ function AM__defineClass(cname, kind, imixins, cmixins) {
   mcls.constructor = null;
 
   let cls         = Object.create(mcls.prototype);
-  cls.kind        = kind;
+  cls.storage     = storage;
   cls.mixins      = imixins;
   cls.prototype   = Object.create(null);
   cls.namespace   = Object.create(null);
@@ -152,10 +152,10 @@ function AM__defineAttribute(cname, aname, vis, exprstring) {
   cls.attrinits.push(`this[${propname}] = ${exprstring};\n`);
 };
 
-function AM__defineMethod(cname, mname, vis, generator) {
+function AM__defineMethod(cname, mname, vis, func) {
   let cls = AM__lookup(cname);
 
-  cls.prototype["SEL__" + mname] = generator(Amethyst, AM__js, AM__root);
+  cls.prototype["SEL__" + mname] = func;
 };
 
 function AM__check_boolean(value) {

@@ -126,10 +126,11 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     }
 
     let name    = JSON.stringify(ast.name);
+    let storage = JSON.stringify(ast.storage);
     let imixins = ast.imixins.map(name => JSON.stringify(name)).join(", ");
     let cmixins = ast.cmixins.map(name => JSON.stringify(name)).join(", ");
 
-    ast.js += prefix + `AM__defineClass(${name}, [${imixins}], [${cmixins}]);\n`;
+    ast.js += prefix + `AM__defineClass(${name}, ${storage}, [${imixins}], [${cmixins}]);\n`;
     for (let attribute of cattrs) {
       ast.js += prefix + `\n`;
       ast.js += attribute.js;
@@ -192,7 +193,7 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
 
     let cname = JSON.stringify(`${cls.name}${ast.static ? ".class" : ""}`);
     let mname = JSON.stringify(ast.name);
-    let fname = JSON.stringify(`SEL__${cls.name.replace(".", "__")}${ast.static ? "__class" : ""}__${Mangle(ast.name)}`);
+    let fname = `SEL__${cls.name.replace(".", "__")}${ast.static ? "__class" : ""}__${Mangle(ast.name)}`;
     let vis   = JSON.stringify(ast.vis);
 
     let precount = 0, postcount = 0, restindex = null;
@@ -252,6 +253,12 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       ast.js += prefix + `  }\n`;
       ast.js += prefix + `);\n`;
     }
+  }
+  else if (ast.tag === "Storage") {
+    let cname   = JSON.stringify(`${cls.name}${ast.static ? ".class" : ""}`);
+    let storage = JSON.stringify(ast.storage);
+
+    ast.js += prefix + `AM__defineStorage(${cname}, ${storage});\n`;
   }
 
   else if (ast.tag === "Block") {
@@ -596,7 +603,7 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
 
       ast.js = `(new ${rcpt}.constructor(${args}))`;
     }
-    else if (ast.recipient.tag === "E_Super") {
+    else if (ast.recipient != null && ast.recipient.tag === "E_Super") {
       if (ast.rep != null) ast.selector += "#";
       if (ast.set != null) ast.selector += "=";
 
@@ -627,7 +634,7 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
         Generate(argument, prefix, cls, method, loop, scope);
       }
 
-      let rcpt = ast.recipient.js;
+      let rcpt = (ast.recipient != null ? ast.recipient.js : "this");
       let sel  = JSON.stringify("SEL__" + ast.selector);
       let args = ast.arguments.map(a => a.js).join(", ");
 

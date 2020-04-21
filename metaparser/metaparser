@@ -75,9 +75,9 @@ function main() {
     }
 
     // Output target file path.
-    if (o === "--output") {
-      if (i === c)            abort(`Expected path argument for --output.`);
-      if (outputPath != null) abort(`Cannot specify --ouput twice.`);
+    if (o === "--out") {
+      if (i === c)            abort(`Expected path argument for --out.`);
+      if (outputPath != null) abort(`Cannot specify --out twice.`);
       outputPath = process.argv[i++];
       continue;
     }
@@ -177,12 +177,13 @@ function output(path, string) {
 }
 
 function usage() {
-  console.error(`usage: metaparser [-m output-type] [-o output-path] input-path`);
+  console.error(`usage: metaparser [-o output-path] input-path`);
   console.error(``);
   console.error(`       --parse              Output Grammar AST`);
   console.error(`       --simplify           Output Simplified AST`);
   console.error(`       --generate (default) Output Generated JavaScript`);
-  console.error(`  -o | --output path        Write output to path`);
+  console.error(`       --token              Parser should use token input mode.`);
+  console.error(`  -o | --out path           Write output to path`);
   console.error(`  -h | --help               Display this message`);
   console.error(``);
   process.exit(1);

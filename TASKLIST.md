@@ -1,9 +1,11 @@
 # TASKLIST #
 
-- Update Generate to include a kind argument to `AM__defineClass`.
+- Get code compiling and running a simple main method.
+- Start looking at testing different parts of the Array object.
 
 - Implement `Array_Enumerator` and `Array:enumerate`.
 - Ensure that all `Enumerator` classes support JavaScript enumerability.
+- Ensure that `expr.my_method(*argv)` generates `...argv` correctly.
 
 =======================================
 
