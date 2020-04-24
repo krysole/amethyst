@@ -29,4 +29,5 @@ class Test () abstract {
   public static main(argv) {
     print("Hello world.\n")
   }
+
 }

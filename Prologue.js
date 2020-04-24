@@ -186,21 +186,21 @@ function AM__add(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return a + b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__add__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__add__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__add__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__add__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return a + b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__add__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__add__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__add__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__add__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__add"];
@@ -277,21 +277,21 @@ function AM__sub(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return a - b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__sub__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__sub__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__sub__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__sub__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return a - b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__sub__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__sub__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__sub__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__sub__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__sub"];
@@ -368,21 +368,21 @@ function AM__mul(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return a * b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__sub__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__sub__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__sub__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__sub__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return a * b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__sub__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__sub__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__sub__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__sub__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__mul"];
@@ -435,21 +435,21 @@ function AM__div(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return a / b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__div__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__div__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__div__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__div__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") throw Error("INT_DIV_ERROR (see quo or fquo)");
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__div__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__div__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__div__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__div__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__div"];
@@ -502,21 +502,21 @@ function AM__quo(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return Math.trunc(a / b);
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__quo__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__quo__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__quo__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__quo__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return a / b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__quo__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__quo__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__quo__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__quo__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__quo"];
@@ -569,21 +569,21 @@ function AM__rem(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return a % b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__rem__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__rem__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__rem__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__rem__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return a % b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__rem__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__rem__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__rem__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__rem__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__rem"];
@@ -636,21 +636,21 @@ function AM__fquo(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return Math.floor(a / b);
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__fquo__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__fquo__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__fquo__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__fquo__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return AM__fquo__Integer__Integer(a, b);
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__fquo__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__fquo__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__fquo__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__fquo__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__fquo"];
@@ -710,21 +710,21 @@ function AM__frem(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return AM__frem__Number__Number(a, b);
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__frem__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__frem__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__frem__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__frem__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return AM__frem__Integer__Integer(a, b);
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__frem__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__frem__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__frem__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__frem__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__frem"];
@@ -822,21 +822,21 @@ function AM__cquo(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return Math.ceil(a / b);
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__cquo__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__cquo__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__cquo__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__cquo__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return AM__cquo__Integer__Integer(a, b);
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__cquo__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__cquo__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__cquo__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__cquo__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__cquo"];
@@ -896,21 +896,21 @@ function AM__crem(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return AM__crem__Number__Number(a, b);
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__crem__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__crem__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__crem__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__crem__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return AM__crem__Integer__Integer(a, b);
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__crem__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__crem__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__crem__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__crem__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__crem"];
@@ -1003,26 +1003,161 @@ function AM__crem__Array__Number(a, b) {
 // Operator (<<)
 //
 
-function AM__shl(a, b) { // Sometimes also called sal().
+function AM__sal(a, b) { // Sometimes also called sal().
   if (a == null || b == null) throw Error("NIL_ERROR");
 
   if (typeof a === "number") {
     if (typeof b === "number") return a << b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__sal__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__sal__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__sal__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__sal__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return a << b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__sal__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__sal__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__sal__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__sal__Array__Number(a, b);
+  }
+  else {
+    let op_a = a["OP__sal"];
+    let op_b = b["OP__sal"];
+    if (op_a != null && op_a === op_b) return op_a(a, b);
+  }
+
+  throw Error("TYPE_ERROR");
+}
+
+function AM__sal__Number__Vector(a, b) {
+  let count  = b.length;
+  let result = new Array(count);
+  for (let i = 0, c = count; i < c; i++) {
+    result[i] = AM__sal(a, b[i]);
+  }
+  return result;
+}
+function AM__sal__Vector__Number(a, b) {
+  let count  = a.length;
+  let result = new Array(count);
+  for (let i = 0, c = count; i < c; i++) {
+    result[i] = AM__sal(a[i], b);
+  }
+  return result;
+}
+
+function AM__sal__Number__Array(a, b) {
+  let result = b.SEL__copy();
+  for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
+    enumerator["SEL__value="](AM__sal(a, enumerator.SEL__value()));
+  }
+  return result;
+}
+function AM__sal__Array__Number(a, b) {
+  let result = a.SEL__copy();
+  for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
+    enumerator["SEL__value="](AM__sal(enumerator.SEL__value(), b));
+  }
+  return result;
+}
+
+
+//
+// Operator (>>)
+//
+
+function AM__sar(a, b) {
+  if (a == null || b == null) throw Error("NIL_ERROR");
+
+  if (typeof a === "number") {
+    if (typeof b === "number") return a >> b;
+    if ("TAG__Vector" in b)    return AM__sar__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__sar__Number__Array(a, b);
+  }
+  else if (typeof b === "number") {
+    if ("TAG__Vector" in a)    return AM__sar__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__sar__Array__Number(a, b);
+  }
+  else if (typeof a === "bigint") {
+    if (typeof b === "bigint") return a >> b;
+    if ("TAG__Vector" in b)    return AM__sar__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__sar__Number__Array(a, b);
+  }
+  else if (typeof b === "bigint") {
+    if ("TAG__Vector" in a)    return AM__sar__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__sar__Array__Number(a, b);
+  }
+  else {
+    let op_a = a["OP__sar"];
+    let op_b = b["OP__sar"];
+    if (op_a != null && op_a === op_b) return op_a(a, b);
+  }
+
+  throw Error("TYPE_ERROR");
+}
+
+function AM__sar__Number__Vector(a, b) {
+  let count  = b.length;
+  let result = new Array(count);
+  for (let i = 0, c = count; i < c; i++) {
+    result[i] = AM__sar(a, b[i]);
+  }
+  return result;
+}
+function AM__sar__Vector__Number(a, b) {
+  let count  = a.length;
+  let result = new Array(count);
+  for (let i = 0, c = count; i < c; i++) {
+    result[i] = AM__sar(a[i], b);
+  }
+  return result;
+}
+
+function AM__sar__Number__Array(a, b) {
+  let result = b.SEL__copy();
+  for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
+    enumerator["SEL__value="](AM__sar(a, enumerator.SEL__value()));
+  }
+  return result;
+}
+function AM__sar__Array__Number(a, b) {
+  let result = a.SEL__copy();
+  for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
+    enumerator["SEL__value="](AM__sar(enumerator.SEL__value(), b));
+  }
+  return result;
+}
+
+
+
+//
+// Operator (<<<)
+//
+
+function AM__shl(a, b) {
+  if (a == null || b == null) throw Error("NIL_ERROR");
+
+  if (typeof a === "number") {
+    if (typeof b === "number") return a << b;
+    if ("TAG__Vector" in b)    return AM__shl__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__shl__Number__Array(a, b);
+  }
+  else if (typeof b === "number") {
+    if ("TAG__Vector" in a)    return AM__shl__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__shl__Array__Number(a, b);
+  }
+  else if (typeof a === "bigint") {
+    if (typeof b === "bigint") return a << b;
+    if ("TAG__Vector" in b)    return AM__shl__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__shl__Number__Array(a, b);
+  }
+  else if (typeof b === "bigint") {
+    if ("TAG__Vector" in a)    return AM__shl__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__shl__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__shl"];
@@ -1067,73 +1202,6 @@ function AM__shl__Array__Number(a, b) {
 
 
 //
-// Operator (>>)
-//
-
-function AM__sar(a, b) {
-  if (a == null || b == null) throw Error("NIL_ERROR");
-
-  if (typeof a === "number") {
-    if (typeof b === "number") return a >> b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
-  }
-  else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
-  }
-  else if (typeof a === "bigint") {
-    if (typeof b === "bigint") return a >> b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
-  }
-  else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
-  }
-  else {
-    let op_a = a["OP__sar"];
-    let op_b = b["OP__sar"];
-    if (op_a != null && op_a === op_b) return op_a(a, b);
-  }
-
-  throw Error("TYPE_ERROR");
-}
-
-function AM__sar__Number__Vector(a, b) {
-  let count  = b.length;
-  let result = new Array(count);
-  for (let i = 0, c = count; i < c; i++) {
-    result[i] = AM__sar(a, b[i]);
-  }
-  return result;
-}
-function AM__sar__Vector__Number(a, b) {
-  let count  = a.length;
-  let result = new Array(count);
-  for (let i = 0, c = count; i < c; i++) {
-    result[i] = AM__sar(a[i], b);
-  }
-  return result;
-}
-
-function AM__sar__Number__Array(a, b) {
-  let result = b.SEL__copy();
-  for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator["SEL__value="](AM__sar(a, enumerator.SEL__value()));
-  }
-  return result;
-}
-function AM__sar__Array__Number(a, b) {
-  let result = a.SEL__copy();
-  for (let enumerator = result.SEL__enumerate(); enumerator.SEL__next_p(); enumerator.SEL__next_x()) {
-    enumerator["SEL__value="](AM__sar(enumerator.SEL__value(), b));
-  }
-  return result;
-}
-
-
-//
 // Operator (>>>)
 //
 
@@ -1142,21 +1210,21 @@ function AM__shr(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return a >>> b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__shr__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__shr__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__shr__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__shr__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return a >>> b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__shr__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__shr__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__shr__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__shr__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__shr"];
@@ -1209,21 +1277,21 @@ function AM__bit_or(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return a | b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__shr__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__shr__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__shr__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__shr__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return a | b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__shr__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__shr__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__shr__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__shr__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__bit_or"];
@@ -1276,21 +1344,21 @@ function AM__bit_xor(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return a ^ b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__bit_xor__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__bit_xor__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__bit_xor__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__bit_xor__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return a ^ b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__bit_xor__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__bit_xor__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__bit_xor__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__bit_xor__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__bit_xor"];
@@ -1343,21 +1411,21 @@ function AM__bit_and(a, b) {
 
   if (typeof a === "number") {
     if (typeof b === "number") return a & b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__bit_xor__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__bit_xor__Number__Array(a, b);
   }
   else if (typeof b === "number") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__bit_xor__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__bit_xor__Array__Number(a, b);
   }
   else if (typeof a === "bigint") {
     if (typeof b === "bigint") return a & b;
-    if (TAG__Vector in b)      return AM__add__Number__Vector(a, b);
-    if (TAG__Array  in b)      return AM__add__Number__Array(a, b);
+    if ("TAG__Vector" in b)    return AM__bit_xor__Number__Vector(a, b);
+    if ("TAG__Array"  in b)    return AM__bit_xor__Number__Array(a, b);
   }
   else if (typeof b === "bigint") {
-    if (TAG__Vector in a)      return AM__add__Vector__Number(a, b);
-    if (TAG__Array  in b)      return AM__add__Array__Number(a, b);
+    if ("TAG__Vector" in a)    return AM__bit_xor__Vector__Number(a, b);
+    if ("TAG__Array"  in b)    return AM__bit_xor__Array__Number(a, b);
   }
   else {
     let op_a = a["OP__bit_and"];

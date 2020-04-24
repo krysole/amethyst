@@ -43,10 +43,10 @@ grammar Parser {
   | vis:p static?:s "[" plist:ps "]"      sparam("[]"):x    pbody:b
     !{ tag: "Method", name: x.name, vis: p, static: s, parameters: ps, sparam: x.parameter, body: b }
 
-  | "operator" static?:s infixOperator:o "(" local:a "," local:b ")" pbody:b
+  | "operator" static?:s infixop:n "(" local:a "," local:b ")" pbody:b
     !{ tag: "Plain_Parameter", name: a }:ap
     !{ tag: "Plain_Parameter", name: b }:bp
-    !{ tag: "Operator", name: o, static: s, parameters: [ap, bp], body: b }
+    !{ tag: "Operator", name: n, static: s, parameters: [ap, bp], body: b }
 
   | vis:gp ":" vis:sp ":" vis:rp static?:s ID:n ( "=" expression | !null ):e
     !{ tag: "Attribute", name: n.text, get: gp, set: sp, rep: rp,   static: s, value: e }
@@ -70,19 +70,24 @@ grammar Parser {
   | doUntilStatement
   | forStatement
   | eachStatement
+
+  | inlineStatement
+  }
+  inlineStatement {
+  | inlineStatement:b "if"     expression:c !{ tag: "S_If", negated: false, condition: c, consiquent: b, alterantive: null }
+  | inlineStatement:b "unless" expression:c !{ tag: "S_If", negated: true,  condition: c, consiquent: b, alterantive: null }
+  | inlineStatement:b "while"  expression:c !{ tag: "S_While", negated: false, condition: c, body: b }
+  | inlineStatement:b "until"  expression:c !{ tag: "S_While", negated: true,  condition: c, body: b }
+  | inlineStatement:b "forever"             !{ tag: "S_Forever", body: b }
+
+  | basicStatement
+  }
+  basicStatement {
   | breakStatement
   | continueStatement
   | returnStatement
   | raiseStatement
   | expressionStatement
-  }
-  bstatement {
-  | block
-  | breakStatement:s           !{ tag: "Block", statements: [s] }
-  | continueStatement:s        !{ tag: "Block", statements: [s] }
-  | returnStatement:s          !{ tag: "Block", statements: [s] }
-  | raiseStatement:s           !{ tag: "Block", statements: [s] }
-  | ~"{" expressionStatement:s !{ tag: "Block", statements: [s] }
   }
 
   letStatement {
@@ -91,59 +96,59 @@ grammar Parser {
   }
   ifStatement {
     "if" expression:c
-    ( TERM? "then" bstatement | TERM? block ):t
+    ( TERM? "then" sbody | TERM? block ):t
     ( TERM? elseBranch | !null ):f
     !{ tag: "S_If", negated: false, condition: c, consiquent: t, alterantive: f }
   }
   unlessStatement {
     "unless" expression:c
-    ( TERM? "then" bstatement | TERM? block ):t
+    ( TERM? "then" sbody | TERM? block ):t
     ( TERM? elseBranch | !null ):f
     !{ tag: "S_If", negated: true, condition: c, consiquent: t, alternative: f }
   }
   elseBranch {
   | "else" ifStatement
   | "else" unlessStatement
-  | "else" bstatement
+  | "else" sbody
   }
   givenStatement {
-    "given" expression:s "match" mbody:cs
-    !{ tag: "S_Given", subject: s, cases: cs }
+    "given" ( local:n "=" )? expression:s "match" mbody:cs
+    !{ tag: "S_Given", name: n, subject: s, cases: cs }
   }
   caseStatement {
   | "case" pattern:p
-    ( TERM? "do" bstatement | TERM? block ):b
+    ( TERM? "do" sbody | TERM? block ):b
     !{ tag: "C_Pattern", pattern: p, body: b }
-  | "else" bstatement:b
+  | "else" sbody:b
     !{ tag: "C_Else", body: b }
   }
   onceStatement {
-  | "once" bstatement:b
+  | "once" sbody:b
     !{ tag: "S_Once", body: b }
   | block:b
     !{ tag: "S_Once", body: b }
   }
   foreverStatement {
-    "forever" bstatement:b
+    "forever" sbody:b
     !{ tag: "S_Forever", body: b }
   }
   whileStatement {
     "while" expression:c
-    ( TERM? "do" bstatement | TERM? block ):b
+    ( TERM? "do" sbody | TERM? block ):b
     !{ tag: "S_While", negated: false, condition: c, body: b }
   }
   untilStatement {
     "until" expression:c
-    ( TERM? "do" bstatement | TERM? block ):b
+    ( TERM? "do" sbody | TERM? block ):b
     !{ tag: "S_While", negated: true, condition: c, body: b }
   }
   doWhileStatement {
-    "do" bstatement:b
+    "do" sbody:b
     TERM? "while" expression:c
     !{ tag: "S_Do_While", negated: false, body: b, condition: c }
   }
   doUntilStatement {
-    "do" bstatement:b
+    "do" sbody:b
     TERM? "until" expression:c
     !{ tag: "S_Do_While", negated: true, body: b, condition: c }
   }
@@ -152,13 +157,13 @@ grammar Parser {
     ( variable ; "," )+:vs ";"
     ( expression ; "," )+:cs ";"
     ( expression ; "," )+:is
-    ( TERM? "do" bstatement | TERM? block ):b
+    ( TERM? "do" sbody | TERM? block ):b
     !{ tag: "S_For", variables: vs, conditions: cs, increments: is, body: b }
   }
   eachStatement {
-    "each" ( local ; "," )+:vs "in" expression:s
-    ( TERM? "do" bstatement | TERM? block ):b
-    !{ tag: "S_Each", variables: vs, subject: s, body: b }
+    "each" ( local ; "," )+:ns "in" expression:s
+    ( TERM? "do" sbody | TERM? block ):b
+    !{ tag: "S_Each", names: ns, subject: s, body: b }
   }
   breakStatement {
     "break"
@@ -234,6 +239,7 @@ grammar Parser {
   shiftExpression {
   | shiftExpression:a  "<<":o addExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
   | shiftExpression:a  ">>":o addExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | shiftExpression:a "<<<":o addExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
   | shiftExpression:a ">>>":o addExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
   |                           addExpression
   }
@@ -243,15 +249,15 @@ grammar Parser {
   |                       mulExpression
   }
   mulExpression {
-  | mulExpression:a "*"    prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "/"    prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "quo"  prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "rem"  prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "fquo" prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "frem" prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "cquo" prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  | mulExpression:a "crem" prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
-  |                        prefixExpression
+  | mulExpression:a    "*":o prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a    "/":o prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a  "quo":o prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a  "rem":o prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a "fquo":o prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a "frem":o prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a "cquo":o prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  | mulExpression:a "crem":o prefixExpression:b !{ tag: "E_Infix", o: o.text, a: a, b: b }
+  |                          prefixExpression
   }
   prefixExpression {
   | "+":o secondaryExpression:a !{ tag: "E_Prefix", o: o.text, a: a }
@@ -286,6 +292,9 @@ grammar Parser {
   | local:n  "(" elist:as ")" !{ tag: "E_Message",  recipient: null, selector: n,      arguments: as }
   | local:n                   !{ tag: "E_Message",  recipient: null, selector: n,      arguments: [] }
 
+  | literalExpression
+  }
+  literalExpression {
   | "self"   !{ tag: "E_Self" }
   | "super"  !{ tag: "E_Super" }
 
@@ -299,14 +308,13 @@ grammar Parser {
 
 
   pattern {
-  | "self" !{ tag: "P_Equal", expression: { tag: "E_Self" } }
-
-  | "\"" concatenateFragment*:es "\"" !{ tag: "P_Equal", expression: { tag: "E_Concatenate", elements: es } }
-
-  | NUMBER:n !{ tag: "P_Equal", expression: { tag: "E_Number",  value: n.value } }
-  | "true"   !{ tag: "P_Equal", expression: { tag: "E_Boolean", value: true    } }
-  | "false"  !{ tag: "P_Equal", expression: { tag: "E_Boolean", value: false   } }
-  | "nil"    !{ tag: "P_Equal", expression: { tag: "E_Nil" } }
+  | literalPattern
+  }
+  literalPattern {
+  | ("+"|"-"|"~"):o literalExpression:e
+    !{ tag: "P_Literal", expression: { tag: "E_Prefix", o: o.text, a: e } }
+  | literalExpression:e
+    !{ tag: "P_Literal", expression: e }
   }
 
 
@@ -343,13 +351,17 @@ grammar Parser {
   |     local:n !{ tag: "Plain_Parameter", name: n }
   }
   pbody {
-  | TERM? "do" expression
+  | TERM? "do" expression:e                                                    !{ tag: "Block", statements: [{ tag: "S_Return", expression: e }] }
   | TERM? "{" INDENT ( ( statement ; ";" )*:ss ";"? TERM !ss )*:sss DEDENT "}" !{ tag: "Block", statements: sss.flat() }
   | TERM? "{"          ( statement ; ";" )*:ss ";"? TERM?                  "}" !{ tag: "Block", statements: ss         }
   }
   mbody {
   | TERM? "{" INDENT ( ( caseStatement ; ";" )*:ss ";"? TERM !ss )*:sss DEDENT "}" !sss.flat()
   | TERM? "{"          ( caseStatement ; ";" )*:ss ";"? TERM?                  "}" !ss
+  }
+  sbody {
+  | block
+  | inlineStatement:s !{ tag: "Block", statements: [s] }
   }
   variable {
     ID:n ( "=" expression:e | !null:e )
@@ -399,6 +411,20 @@ grammar Parser {
       "do",
     ].includes(n.text)
     !n.text
+  }
+  infixop {
+    OP:o
+    ?[
+      "==", "<>",
+      "+", "-", "*", "/",
+      "quo", "rem",
+      "fquo", "frem",
+      "cquo", "crem",
+      "|", "^", "&",
+      "<<<", ">>>", "<<", ">>",
+      "++"
+    ].includes(o.text)
+    !o.text
   }
 
 }

@@ -46,13 +46,15 @@ class Array (Object) {
 
   public static [] {
     let array = self.allocate
-    for i = 0, c = $arguments.$length; i < c; i = i + 1 {
-      array.append!($arguments.prop(i))
+    for i = 0, c = argc; i < c; i = i + 1 {
+      array.append!(argv.prop(i))
     }
     return array
   }
 
   public static empty do []
+
+  {#
 
 
   private : private _count     = 0
@@ -161,7 +163,7 @@ class Array (Object) {
 
 
   public [index] {
-    if (index < 0 || index >= _count) raise "INDEX_ERROR";
+    raise "INDEX_ERROR" if index < 0 or index >= _count
 
     let tail_start = _count - tail_count
     let tail_index = index  - tail_start
@@ -176,7 +178,7 @@ class Array (Object) {
       -- Descend down to the required leaf node.
       while subcap > 1 {
         segment = segment.prop(bindex)
-        index   = index % subcap
+        index   = index rem subcap
         subcap  = subcap / 32
         bindex  = Math.floor(index / subcap)
       }
@@ -185,7 +187,7 @@ class Array (Object) {
     }
   }
   public [index] = value {
-    if (index < 0 || index >= _count) raise "INDEX_ERROR";
+    raise "INDEX_ERROR" if index < 0 or index >= _count
 
     let tail_start = _count - tail_count
     let tail_index = index  - tail_start
@@ -209,7 +211,7 @@ class Array (Object) {
       -- Descend down to the leaf node.
       while subcap > 1 {
         segment = segment.prop(bindex)
-        index   = index % subcap
+        index   = index rem subcap
         subcap  = subcap / 32
         bindex  = Math.floor(index / subcap)
 
@@ -222,7 +224,7 @@ class Array (Object) {
     }
   }
   public [index] # value {
-    if (index < 0 || index >= _count) raise "INDEX_ERROR";
+    raise "INDEX_ERROR" if index < 0 or index >= _count
 
     let v = copy
     v[index] = value
@@ -361,7 +363,7 @@ class Array (Object) {
 
           -- Descend into the next branch.
           segment = segment'
-          index   = index % subcap
+          index   = index rem subcap
           subcap  = subcap / 32
           bindex  = Math.floor(index / subcap)
         }
@@ -422,7 +424,7 @@ class Array (Object) {
         parent = segment
         segment = segment'
         pindex  = bindex
-        index   = index % subcap
+        index   = index rem subcap
         subcap  = subcap / 32
         bindex  = Math.floor(index / subcap)
 
@@ -573,61 +575,6 @@ class Array (Object) {
     }
     return true
   }
-  operator ~= (a, b) {
-    return true unless a._count == b._count
-    let a_enum = a.enumerate
-    let b_enum = b.enumerate
-    for i = 0, c = a._count; i < c; i = i + 1 {
-      return true unless a_enum.value == b_enum.value
-      a_enum.next!
-      b_enum.next!
-    }
-    return false
-  }
-  operator < (a, b) {
-    let a_enum = a.enumerate
-    let b_enum = b.enumerate
-    for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
-      return false unless a_enum.value <= b_enum.value
-      a_enum.next!
-      b_enum.next!
-    }
-    return false unless a._count < b._count
-    return true
-  }
-  operator > (a, b) {
-    let a_enum = a.enumerate
-    let b_enum = b.enumerate
-    for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
-      return false unless a_enum.value >= b_enum.value
-      a_enum.next!
-      b_enum.next!
-    }
-    return false unless a._count > b._count
-    return true
-  }
-  operator <= (a, b) {
-    let a_enum = a.enumerate
-    let b_enum = b.enumerate
-    for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
-      return false unless a_enum.value <= b_enum.value
-      a_enum.next!
-      b_enum.next!
-    }
-    return false unless a._count <= b._count
-    return true
-  }
-  operator >= (a, b) {
-    let a_enum = a.enumerate
-    let b_enum = b.enumerate
-    for i = 0, c = Math.min(a._count, b._count); i < c; i = i + 1 {
-      return false unless a_enum.value >= b_enum.value
-      a_enum.next!
-      b_enum.next!
-    }
-    return false unless a._count >= b._count
-    return true
-  }
   operator <> (a, b) {
     let a_enum = a.enumerate
     let b_enum = b.enumerate
@@ -678,7 +625,7 @@ class Array (Object) {
   }
   public map(transformer) {
     let array = []
-    for e, i in self do array.append!(transformer[e, i])
+    each e, i in self do array.append!(transformer[e, i])
     return array
   }
 
@@ -696,12 +643,12 @@ class Array (Object) {
   }
   public select(predicate) {
     let array = []
-    for e, i in self do array.append!(e) if predicate[e, i]
+    each e, i in self do array.append!(e) if predicate[e, i]
     return array
   }
   public reject(predicate) {
     let array = []
-    for e, i in self do array.append!(e) if not predicate[e, i]
+    each e, i in self do array.append!(e) if not predicate[e, i]
     return array
   }
 
@@ -886,5 +833,7 @@ class Array (Object) {
     each e in self do result = result ++ seperator ++ e
     return result
   }
+
+  #}
 
 }

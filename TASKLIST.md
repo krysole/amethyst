@@ -14,7 +14,7 @@
   * Boolean, Number, Integer, String, Symbol, Procedure
   * Vector (JSON Array), Basic (JSON Dictionary)
   * Array, Dictionary, Set, Buffer (?)
-  * Enumerator, Enumerable
+  * Enumerator, Enumerablen
 
 - Implement metamethods for the compile time type Basic (JS Objects).
   * `[]`/`[]=` for convenience in addition to `prop`/`prop=`.
@@ -22,6 +22,14 @@
   * `include?` for `"property" in object` support.
   * `remove!` for Basic objects, but not Amethyst objects.
 
+- Implement metamethods for argv that allow it to be used directly.
+  * `count` as an alternative to using `argc` if people prefer that.
+  * `[]` to make fetching arguments more intuitive than `prop`.
+
+- Implement something like `Array.from()` or `Vector.from()`.
+- Implement something like `Dictionary.from()` or `Set.from()`.
+
+- Figure out if we can increase Array performance using i32 math (like shift/mask).
 - Figure out a way to limit metamethods to specific compile time types.
 - Figure out a better syntax for attributes if possible.
 - Figure out if nil should have a class or not.
@@ -33,3 +41,21 @@
 - Add ordering for all supportable types.
 - Add parameter/assignment patterns.
 - Add full pattern matching.
+
+- Consider adding an errata or tolerances document. Some examples follow.
+  * Things that use version ordinals have a 53 bit limit. (Array.am)
+
+=======================================
+
+Fix metaparser production compilation of following rule.
+
+```
+literalPattern {
+  ("+"|"-"|"~"|!null):o literalExpression:e
+  ?(e.tag !== "E_Super")
+  ?(o == null ? e : { tag: "E_Prefix", o: o.text, a: e }):e
+  !{ tag: "P_Literal", expression: e }
+}
+```
+
+Specifically the second condition is failing for some reason.

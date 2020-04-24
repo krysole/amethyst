@@ -27,12 +27,14 @@ function Transmute(target, source) {
 function Lookup(scope, name) {
   let local = scope.locals.find(l => l.name === name);
   if (local != null) {
+    process.stderr.write(`Lookup ${name} succeeded.\n`);
     return local;
   }
   else if (scope.parent != null) {
     return Lookup(scope.parent, name);
   }
   else {
+    process.stderr.write(`Lookup ${name} failed.\n`);
     return null;
   }
 }
@@ -61,8 +63,9 @@ function MangleOperator(prefix, opname) {
   if (opname === "|")    name = "bit_or";
   if (opname === "^")    name = "bit_xor";
   if (opname === "&")    name = "bit_and";
-  if (opname === "<<")   name = "shl";
+  if (opname === "<<")   name = "sal";
   if (opname === ">>")   name = "sar";
+  if (opname === "<<<")  name = "shl";
   if (opname === ">>>")  name = "shr";
   if (opname === "+")    name = "add";
   if (opname === "-")    name = "sub";
@@ -75,13 +78,6 @@ function MangleOperator(prefix, opname) {
   if (opname === "cquo") name = "cquo";
   if (opname === "crem") name = "crem";
   return `${prefix}__${name}`;
-}
-
-function MakeBlockBody(ast) {
-  if (ast.tag !== "Block") {
-    ast = { tag: "Block", statements: [{ tag: "S_Expression", expression: ast }] }
-  }
-  return ast;
 }
 
 export function Generate(ast, prefix, cls, method, loop, scope) {
@@ -172,9 +168,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     let cname = JSON.stringify(`${cls.name}${ast.static ? ".class" : ""}`);
     let oname = JSON.stringify(ast.name);
 
-    if (ast.body.tag !== "Block") {
-      ast.body = { tag: "Block", statements: [{ tag: "S_Return", expression: ast.body }] };
-    }
     ast.body.parameters = ast.parameters;
     Generate(ast.body, prefix + "    ", cls, ast, null, null);
 
@@ -216,9 +209,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       }
     }
 
-    if (ast.body.tag !== "Block") {
-      ast.body = { tag: "Block", statements: [{ tag: "S_Return", expression: ast.body }] };
-    }
     ast.body.parameters = ast.parameters;
     Generate(ast.body, prefix + "    ", cls, ast, null, null);
 
@@ -253,12 +243,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       ast.js += prefix + `  }\n`;
       ast.js += prefix + `);\n`;
     }
-  }
-  else if (ast.tag === "Storage") {
-    let cname   = JSON.stringify(`${cls.name}${ast.static ? ".class" : ""}`);
-    let storage = JSON.stringify(ast.storage);
-
-    ast.js += prefix + `AM__defineStorage(${cname}, ${storage});\n`;
   }
 
   else if (ast.tag === "Block") {
@@ -298,8 +282,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     ast.js = ``;
 
     if (ast.alternative == null) {
-      ast.consiquent  = MakeBlockBody(ast.consiquent);
-
       Generate(ast.condition,   prefix,        cls, method, loop, scope);
       Generate(ast.consiquent,  prefix + "  ", cls, method, loop, scope);
 
@@ -308,9 +290,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       ast.js += prefix + `}\n`;
     }
     else {
-      ast.consiquent  = MakeBlockBody(ast.consiquent);
-      ast.alternative = MakeBlockBody(ast.alternative);
-
       Generate(ast.condition,   prefix,        cls, method, loop, scope);
       Generate(ast.consiquent,  prefix + "  ", cls, method, loop, scope);
       Generate(ast.alternative, prefix + "  ", cls, method, loop, scope);
@@ -330,13 +309,21 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     ast.locals = [];
     ast.loopLabel = "LABEL__" + method.genlabel++;
 
-    Generate(ast.subject, prefix + "  ", cls, method, loop, scope);
+    if (ast.name != null) {
+      ast.variable = { tag: "Variable", name: ast.name };
+      ast.locals.push(ast.variable);
+    }
+
+    Generate(ast.subject, prefix + "  ", cls, method, loop, ast);
     for (let c of ast.cases) {
-      Generate(c, prefix + "  ", cls, method, ast, scope);
+      Generate(c, prefix + "  ", cls, method, ast, ast);
     }
 
     ast.js += prefix + `${ast.loopLabel}: while (true) {\n`;
     ast.js += prefix + `  let SUBJECT = ${ast.subject.js};\n`;
+    if (ast.name != null) {
+      ast.js += prefix + `  let ${Mangle(ast.name)} = SUBJECT;\n`;
+    }
     for (let c of ast.cases) ast.js += c.js;
     ast.js += prefix + `  throw Error("MATCH_ERROR");\n`;
     ast.js += prefix + `}\n`;
@@ -345,8 +332,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   }
   else if (ast.tag === "S_Once") {
     ast.js = ``;
-
-    ast.body = MakeBlockBody(ast.body);
 
     Generate(ast.body, prefix + "  ", cls, method, ast, scope);
 
@@ -358,8 +343,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   else if (ast.tag === "S_Forever") {
     ast.js = ``;
 
-    ast.body = MakeBlockBody(ast.body);
-
     Generate(ast.body, prefix + "  ", cls, method, ast, scope);
 
     ast.js += prefix + `while (true) {\n`;
@@ -368,8 +351,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   }
   else if (ast.tag === "S_While") {
     ast.js = ``;
-
-    ast.body = MakeBlockBody(ast.body);
 
     Generate(ast.condition, prefix,        cls, method, loop, scope);
     Generate(ast.body,      prefix + "  ", cls, method, ast,  scope);
@@ -382,8 +363,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   }
   else if (ast.tag === "S_Do_While") {
     ast.js = ``;
-
-    ast.body = MakeBlockBody(ast.body);
 
     Generate(ast.condition, prefix,        cls, method, loop, scope);
     Generate(ast.body,      prefix + "  ", cls, method, ast,  scope);
@@ -398,12 +377,13 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   else if (ast.tag === "S_For") {
     ast.js = ``;
 
-    ast.body = MakeBlockBody(ast.body);
+    ast.parent = scope;
+    ast.locals = ast.variables;
 
-    for (let variable  of ast.variables)  Generate(variable.value, prefix, cls, method, loop, scope);
-    for (let condition of ast.conditions) Generate(condition,      prefix, cls, method, loop, scope);
-    for (let increment of ast.increments) Generate(increment,      prefix, cls, method, loop, scope);
-    Generate(ast.body, prefix + "  ", cls, method, ast, scope);
+    for (let variable  of ast.variables)  Generate(variable.value, prefix, cls, method, loop, ast);
+    for (let condition of ast.conditions) Generate(condition,      prefix, cls, method, loop, ast);
+    for (let increment of ast.increments) Generate(increment,      prefix, cls, method, loop, ast);
+    Generate(ast.body, prefix + "  ", cls, method, ast, ast);
 
     let variables  = ast.variables.map(v => `${Mangle(v.name)} = ${v.value.js}`).join(", ");
     let conditions = ast.conditions.map(c => c.js).join(" && ");
@@ -416,17 +396,23 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   else if (ast.tag === "S_Each") {
     ast.js = ``;
 
-    ast.body = MakeBlockBody(ast.body);
+    let attrs = ["first", "second", "third", "fourth", "fifth"].map(name => JSON.stringify("SEL__" + name));
+    if (ast.names.length > 5) throw new Error("Each supports 1 to 5 bindings.");
 
-    Generate(ast.subject, prefix,        cls, method, loop, scope);
-    Generate(ast.body,    prefix + "  ", cls, method, ast,  scope);
-
-    ast.js += prefix + `for (let ENUMERATOR = ${ast.subject.js}.enumerate()); ENUMERATOR.continue_p(); ENUMERATOR.advance()) {\n`;
-    if (ast.key != null) {
-      ast.js += prefix + `  let ${Mangle(ast.key)} = ENUMERATOR.key(), ${Mangle(ast.value)} = ENUMERATOR.value();\n`;
+    ast.variables = [];
+    for (let name of ast.names) {
+      ast.variables.push({ tag: "Variable", name: name });
     }
-    else {
-      ast.js += prefix + `  let ${Mangle(ast.value)} = ENUMERATOR.value();\n`;
+
+    ast.parent = scope;
+    ast.locals = ast.variables;
+
+    Generate(ast.subject, prefix,        cls, method, loop, ast);
+    Generate(ast.body,    prefix + "  ", cls, method, ast,  ast);
+
+    ast.js += prefix + `for (let ENUMERATOR = ${ast.subject.js}["SEL__enumerate"]()); ENUMERATOR["SEL__next?"](); ENUMERATOR["SEL__next!"]()) {\n`;
+    for (let i = 0, c = names.length; i < c; i++) {
+      ast.js += prefix + `  let ${Mangle(names[i])} = ENUMERATOR[${attrs[i]}]();\n`;
     }
     ast.js +=             ast.body.js;
     ast.js += prefix + `}\n`;
@@ -534,6 +520,27 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   else if (ast.tag === "E_Prefix") {
     Generate(ast.a, prefix, cls, method, loop, scope);
 
+    if (ast.a.tag === "E_String") {
+      throw new Error("Prefix operator expected valid operand type.");
+    }
+    if (ast.a.tag === "E_Number") {
+      if (ast.name === "+") ast.a.value = +ast.a.value;
+      if (ast.name === "-") ast.a.value = -ast.a.value;
+      if (ast.name === "~") ast.a.value = ~ast.a.value;
+      Transmute(ast, ast.a);
+      return Generate(ast, prefix, cls, method, loop, scope);
+    }
+    if (ast.a.tag === "E_Boolean") {
+      if (ast.name === "+") throw new Error("Prefix + operator expected value operand type.");
+      if (ast.name === "-") throw new Error("Prefix - operator expected valid operand type.");
+      if (ast.name === "~") ast.a.value = !ast.a.value;
+      Transmute(ast, ast.a);
+      return Generate(ast, prefix, cls, method, loop, scope);
+    }
+    if (ast.a.tag === "E_Nil") {
+      throw new Error("Prefix operator expected valid operand type.");
+    }
+
     if (ast.name === "+") ast.js = `${ast.a.js}.posate()`;
     if (ast.name === "-") ast.js = `${ast.a.js}.negate()`;
     if (ast.name === "~") ast.js = `${ast.a.js}.not()`;
@@ -571,6 +578,14 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
 
         ast.js = `(${Mangle(ast.selector)} = ${ast.set.js})`;
       }
+    }
+    else if (ast.recipient == null && ast.selector === "argc") {
+      // NOTE This is after local handling to allow shadowing.
+      ast.js = `arguments.length`;
+    }
+    else if (ast.recipient == null && ast.selector === "argv") {
+      // NOTE This is after local handling to allow shadowing.
+      ast.js = `arguments`;
     }
     else if (ast.selector === "new") { // METAMETHOD (new)
       if (ast.recipient == null) throw new Error("'new' metamethod expected proc recipient.");
@@ -706,9 +721,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       }
     }
 
-    if (ast.body.tag !== "Block") {
-      ast.body = { tag: "Block", statements: [{ tag: "S_Return", expression: ast.body }] };
-    }
     ast.body.parameters = ast.parameters;
     Generate(ast.body, prefix + "  ", cls, method, loop, scope);
 
@@ -833,13 +845,17 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   else if (ast.tag === "C_Pattern") {
     ast.js = ``;
 
-    if (ast.pattern.tag !== "P_Equal") throw Error("Expected P_Equal in C_Pattern only.");
+    if (ast.pattern.tag !== "P_Literal") throw Error("Expected P_Literal in C_Pattern only.");
 
     ast.noBreak    = loop.noBreak;
     ast.noContinue = loop.noContinue;
     ast.loopLabel  = loop.loopLabel;
     ast.caseLabel  = "LABEL__" + method.genlabel++;
-    ast.body       = MakeBlockBody(ast.body);
+
+    let literals = ["E_Self", "E_String", "E_Number", "E_Boolean", "E_Nil"];
+    if (!literals.includes(ast.pattern.expression.tag)) {
+      throw new Error("P_Literal pattern expected literal expression.");
+    }
 
     Generate(ast.pattern.expression, prefix + "  ", cls, method, ast, scope);
     Generate(ast.body,               prefix + "  ", cls, method, ast, scope);
@@ -857,7 +873,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     ast.noContinue = loop.noContinue;
     ast.loopLabel  = loop.loopLabel;
     ast.caseLabel  = "LABEL__" + method.genlabel++;
-    ast.body       = MakeBlockBody(ast.body);
 
     Generate(ast.body, prefix + "  ", cls, method, ast, scope);
 
