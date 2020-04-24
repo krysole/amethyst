@@ -6,6 +6,7 @@
 - Implement `Array_Enumerator` and `Array:enumerate`.
 - Ensure that all `Enumerator` classes support JavaScript enumerability.
 - Ensure that `expr.my_method(*argv)` generates `...argv` correctly.
+- Ensure that `*arg` is handled correctly in metamethods.
 
 =======================================
 

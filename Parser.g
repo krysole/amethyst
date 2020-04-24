@@ -49,11 +49,11 @@ grammar Parser {
     !{ tag: "Operator", name: n, static: s, parameters: [ap, bp], body: b }
 
   | vis:gp ":" vis:sp ":" vis:rp static?:s ID:n ( "=" expression | !null ):e
-    !{ tag: "Attribute", name: n.text, get: gp, set: sp, rep: rp,   static: s, value: e }
+    !{ tag: "Attribute", name: n.text, get: gp, set: sp, cpy: rp,   static: s, value: e }
   | vis:gp ":" vis:sp            static?:s ID:n ( "=" expression | !null ):e
-    !{ tag: "Attribute", name: n.text, get: gp, set: sp, rep: null, static: s, value: e }
+    !{ tag: "Attribute", name: n.text, get: gp, set: sp, cpy: null, static: s, value: e }
   | vis:p                        static?:s ID:n ( "=" expression | !null ):e
-    !{ tag: "Attribute", name: n.text, get: p,  set: p,  rep: null, static: s, value: e }
+    !{ tag: "Attribute", name: n.text, get: p,  set: p,  cpy: null, static: s, value: e }
   }
 
 
@@ -202,7 +202,7 @@ grammar Parser {
   }
   setExpression {
   | secondaryExpression:m "#" setExpression:e
-    ?(m.tag === "E_Message") !(m.rep = e) !m
+    ?(m.tag === "E_Message") !(m.cpy = e) !m
   | secondaryExpression:m "=" setExpression:e
     ?(m.tag === "E_Message") !(m.set = e) !m
   | secondaryExpression:m "=" setExpression:e
@@ -276,7 +276,7 @@ grammar Parser {
   primaryExpression {
   | "(" expression:a ")" !a
 
-  |        "[" plist:ps "]" "->" expression:b !{ tag: "E_Proc", parameters: ps, body: b }
+  |        "[" plist:ps "]" "->" expression:b !{ tag: "E_Proc", parameters: ps, body: { tag: "Block", statements: [{ tag: "S_Return", expression: b }] } }
   | "proc" "[" plist:ps "]" pbody:b           !{ tag: "E_Proc", parameters: ps, body: b }
   | "proc"                  pbody:b           !{ tag: "E_Proc", parameters: [], body: b }
 

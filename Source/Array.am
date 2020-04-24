@@ -54,8 +54,6 @@ class Array (Object) {
 
   public static empty do []
 
-  {#
-
 
   private : private _count     = 0
   private : private capacity   = 32
@@ -124,6 +122,11 @@ class Array (Object) {
   -- implementation to remember where exactly it is in the tree, allowing
   -- the tree traversal cost to be completely removed.
   --
+  -- Also, should ereverse be enum_reverse, or e_reverse instead?
+  -- Perhaps reverse_enumerate would be fine. There should also be
+  -- things like emap/enum_map/enumerate_map so I'll have to figure
+  -- this out at some point.
+  --
   -- public enumerate ...
   -- public ereverse ...
 
@@ -156,6 +159,8 @@ class Array (Object) {
   public as_source {
     return "[" ++ map([e] -> e.as_source).join(", ") ++ "]"
   }
+
+  {#
 
 
   public keys   do [0...count]

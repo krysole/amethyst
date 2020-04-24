@@ -145,9 +145,9 @@ function AM__defineAttribute(cname, aname, vis, exprstring) {
   let setfunc = new Function(`value`, `return this[${JSON.stringify(propname)}] = value;`);
   let repfunc = new Function(`value`, `let result = this.copy(); result[${JSON.stringify(setname)}](value); return result;`);
 
-  if (getvis !== "nil") cls.prototype[getname] = getfunc;
-  if (setvis !== "nil") cls.prototype[setname] = setfunc;
-  if (repvis !== "nil") cls.prototype[repname] = repfunc;
+  if (getvis != null) cls.prototype[getname] = getfunc;
+  if (setvis != null) cls.prototype[setname] = setfunc;
+  if (repvis != null) cls.prototype[repname] = repfunc;
 
   cls.attrinits.push(`this[${propname}] = ${exprstring};\n`);
 };

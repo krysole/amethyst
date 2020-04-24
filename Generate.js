@@ -27,14 +27,12 @@ function Transmute(target, source) {
 function Lookup(scope, name) {
   let local = scope.locals.find(l => l.name === name);
   if (local != null) {
-    process.stderr.write(`Lookup ${name} succeeded.\n`);
     return local;
   }
   else if (scope.parent != null) {
     return Lookup(scope.parent, name);
   }
   else {
-    process.stderr.write(`Lookup ${name} failed.\n`);
     return null;
   }
 }
@@ -111,7 +109,7 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     for (let method of ast.methods) {
       Generate(method, "", ast, null, null, null);
 
-      if (method.tag === "Accessor") {
+      if (method.tag === "Attribute") {
         if (method.static) cattrs.push(method);
         else               iattrs.push(method);
       }
@@ -148,29 +146,27 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   else if (ast.tag === "Attribute") {
     ast.js = ``;
 
-    if (ast.rep == null) ast.rep = "nil";
+    Generate(ast.value, "", cls, ast, null, null);
 
     let cname = JSON.stringify(`${cls.name}${ast.static ? ".class" : ""}`);
     let aname = JSON.stringify(ast.name);
-    let vis   = JSON.stringify(`${ast.get}:${ast.set}:${ast.rep}`);
+    let vis   = JSON.stringify(`${ast.get}:${ast.set}`);
+    let init  = JSON.stringify(ast.value.js);
 
-    Generate(ast.value, "", cls, ast, null, null);
+    if (ast.cpy != null) vis = vis + ":" + ast.cpy;
 
-    let initial = JSON.stringify(ast.value.js);
-
-    ast.js += prefix + `AM__defineAttribute(${cname}, ${aname}, ${vis}, ${initial});\n`;
+    ast.js += prefix + `AM__defineAttribute(${cname}, ${aname}, ${vis}, ${init});\n`;
   }
   else if (ast.tag === "Operator") {
     ast.js = ``;
 
     ast.genlabel = 0;
 
-    let cname = JSON.stringify(`${cls.name}${ast.static ? ".class" : ""}`);
-    let oname = JSON.stringify(ast.name);
-
     ast.body.parameters = ast.parameters;
     Generate(ast.body, prefix + "    ", cls, ast, null, null);
 
+    let cname      = JSON.stringify(`${cls.name}${ast.static ? ".class" : ""}`);
+    let oname      = JSON.stringify(ast.name);
     let parameters = ast.parameters.map(p => Mangle(p.name)).join(", ");
 
     ast.js += prefix + `AM__defineOperator(${cname}, ${oname},\n`;
@@ -183,11 +179,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     ast.js = ``;
 
     ast.genlabel = 0;
-
-    let cname = JSON.stringify(`${cls.name}${ast.static ? ".class" : ""}`);
-    let mname = JSON.stringify(ast.name);
-    let fname = `SEL__${cls.name.replace(".", "__")}${ast.static ? "__class" : ""}__${Mangle(ast.name)}`;
-    let vis   = JSON.stringify(ast.vis);
 
     let precount = 0, postcount = 0, restindex = null;
     for (let i = 0; i < ast.parameters.length; i++) {
@@ -212,6 +203,11 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     ast.body.parameters = ast.parameters;
     Generate(ast.body, prefix + "    ", cls, ast, null, null);
 
+    let cname = JSON.stringify(`${cls.name}${ast.static ? ".class" : ""}`);
+    let mname = JSON.stringify(ast.name);
+    let fname = `SEL__${cls.name.replace(".", "__")}${ast.static ? "__class" : ""}__${Mangle(ast.name)}`;
+    let vis   = JSON.stringify(ast.vis);
+
     if (restindex == null) {
       let parameters = ast.parameters.map(p => Mangle(p.name)).join(", ");
 
@@ -233,9 +229,9 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
           ast.js += prefix + `    let ${name} = arguments[arguments.length - 1 - ${ast.parameters.length - 1 - i}];\n`;
         }
         if (ast.parameters[i].tag === "Rest_Parameter") {
-          ast.js += prefix + `    let ${name} = new AM__root.Array.allocate();\n`;
+          ast.js += prefix + `    let ${name} = new AM__root.Array.constructor();\n`;
           ast.js += prefix + `    for (let i = ${restindex}, c = arguments.length - ${postcount}; i < c; i++) {\n`;
-          ast.js += prefix + `      ${name}.append_x(arguments[i]);\n`;
+          ast.js += prefix + `      ${name}["SEL__append!"](arguments[i]);\n`;
           ast.js += prefix + `    }\n`;
         }
       }
@@ -410,9 +406,9 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     Generate(ast.subject, prefix,        cls, method, loop, ast);
     Generate(ast.body,    prefix + "  ", cls, method, ast,  ast);
 
-    ast.js += prefix + `for (let ENUMERATOR = ${ast.subject.js}["SEL__enumerate"]()); ENUMERATOR["SEL__next?"](); ENUMERATOR["SEL__next!"]()) {\n`;
-    for (let i = 0, c = names.length; i < c; i++) {
-      ast.js += prefix + `  let ${Mangle(names[i])} = ENUMERATOR[${attrs[i]}]();\n`;
+    ast.js += prefix + `for (let ENUMERATOR = ${ast.subject.js}["SEL__enumerate"](); ENUMERATOR["SEL__next?"](); ENUMERATOR["SEL__next!"]()) {\n`;
+    for (let i = 0, c = ast.names.length; i < c; i++) {
+      ast.js += prefix + `  let ${Mangle(ast.names[i])} = ENUMERATOR[${attrs[i]}]();\n`;
     }
     ast.js +=             ast.body.js;
     ast.js += prefix + `}\n`;
@@ -541,9 +537,9 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       throw new Error("Prefix operator expected valid operand type.");
     }
 
-    if (ast.name === "+") ast.js = `${ast.a.js}.posate()`;
-    if (ast.name === "-") ast.js = `${ast.a.js}.negate()`;
-    if (ast.name === "~") ast.js = `${ast.a.js}.not()`;
+    if (ast.name === "+") ast.js = `${ast.a.js}["SEL__posate"]()`;
+    if (ast.name === "-") ast.js = `${ast.a.js}["SEL__negate"]()`;
+    if (ast.name === "~") ast.js = `${ast.a.js}["SEL__not"]()`;
   }
   else if (ast.tag === "E_Message") {
     if (ast.recipient == null && ast.selector.match(/^[A-Z][A-Za-z0-9_]*$/)) {
@@ -551,8 +547,8 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
         throw new Error("Global variable lookup expected zero arguments.");
       }
 
-      if (ast.rep != null) {
-        throw new Error("Global variable lookup expected no replace argument.");
+      if (ast.cpy != null) {
+        throw new Error("Global variable lookup expected no copyset argument.");
       }
 
       if (ast.set != null) {
@@ -566,8 +562,8 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
         throw new Error("Local variable lookup expected no arguments.");
       }
 
-      if (ast.rep != null) {
-        throw new Error("Local variable lookup expected no replace argument.");
+      if (ast.cpy != null) {
+        throw new Error("Local variable lookup expected no copyset argument.");
       }
 
       if (ast.set == null) {
@@ -587,9 +583,8 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       // NOTE This is after local handling to allow shadowing.
       ast.js = `arguments`;
     }
-    else if (ast.selector === "new") { // METAMETHOD (new)
-      if (ast.recipient == null) throw new Error("'new' metamethod expected proc recipient.");
-      if (ast.rep       != null) throw new Error("'new' metamethod expected no replace argument.");
+    else if (ast.recipient != null && ast.selector === "new") { // METAMETHOD (new)
+      if (ast.cpy       != null) throw new Error("'new' metamethod expected no copyset argument.");
       if (ast.set       != null) throw new Error("'new' metamethod expected no set argument.");
 
       Generate(ast.recipient, prefix, cls, method, loop, scope);
@@ -602,27 +597,70 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
 
       ast.js = `(new ${rcpt}(${args}))`;
     }
-    else if (ast.selector === "allocate") { // METAMETHOD (allocate)
-      if (ast.rep != null) throw new Error("allocate metamethod expected no replace argument.");
+    else if (ast.recipient != null && ast.selector === "allocate") { // METAMETHOD (allocate)
+      if (ast.cpy != null) throw new Error("allocate metamethod expected no copyset argument.");
       if (ast.set != null) throw new Error("allocate metamethod expected no set argument.");
 
-      if (ast.recipient != null) {
-        Generate(ast.recipient, prefix, cls, method, loop, scope);
-      }
+      Generate(ast.recipient, prefix, cls, method, loop, scope);
       for (let argument of ast.arguments) {
         Generate(argument, prefix, cls, method, loop, scope);
       }
 
-      let rcpt = (ast.recipient != null ? ast.recipient.js : "this");
+      let rcpt = ast.recipient.js;
       let args = ast.arguments.map(a => a.js).join(", ");
 
       ast.js = `(new ${rcpt}.constructor(${args}))`;
     }
+    else if (ast.selector === "call") { // METAMETHOD (call)
+      if (ast.cpy != null) throw new Error("call metamethod expected no copyset argument.");
+      if (ast.set != null) throw new Error("call metamethod expected no set argument.");
+
+      if (ast.arguments.length < 1) throw new Error("call metamethod expected at least one argument.");
+
+      ast.selector = ast.arguments.shift();
+
+      Generate(ast.recipient, prefix, cls, method, loop, scope);
+      Generate(ast.selector,  prefix, cls, method, loop, scope);
+      for (let argument of ast.arguments) {
+        Generate(argument, prefix, cls, method, loop, scope);
+      }
+
+      let rcpt = ast.recipient.js;
+      let sel  = ast.selector.js;
+      let args = ast.arguments.map(a => a.js).join(", ");
+
+      ast.js = `${rcpt}[${sel}](${args})`;
+    }
+    else if (ast.selector === "prop") { // METAMETHOD (prop)
+      if (ast.cpy != null) throw new Error("prop metamethod expected no copyset argument.");
+
+      if (ast.arguments.length !== 1) throw new Error("prop metamethod expected exactly one argument.");
+
+      ast.selector = ast.arguments.shift();
+
+      Generate(ast.recipient, prefix, cls, method, loop, scope);
+      Generate(ast.selector,  prefix, cls, method, loop, scope);
+      if (ast.set != null) Generate(ast.set, prefix, cls, method, loop, scope);
+      for (let argument of ast.arguments) {
+        Generate(argument, prefix, cls, method, loop, scope);
+      }
+
+      let rcpt = ast.recipient.js;
+      let sel  = ast.selector.js;
+      let args = ast.arguments.map(a => a.js).join(", ");
+
+      if (ast.set != null) {
+        ast.js = `(${rcpt}[${sel}] = ${ast.set.js})`;
+      }
+      else {
+        ast.js = `${rcpt}[${sel}]`;
+      }
+    }
     else if (ast.recipient != null && ast.recipient.tag === "E_Super") {
-      if (ast.rep != null) ast.selector += "#";
+      if (ast.cpy != null) ast.selector += "#";
       if (ast.set != null) ast.selector += "=";
 
-      if (ast.rep != null) ast.arguments.push(ast.rep);
+      if (ast.cpy != null) ast.arguments.push(ast.cpy);
       if (ast.set != null) ast.arguments.push(ast.set);
 
       for (let argument of ast.arguments) {
@@ -636,10 +674,10 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       ast.js = `Object.getPrototypeOf(this)[${sel}].call(this${sep}${args})`;
     }
     else {
-      if (ast.rep != null) ast.selector += "#";
+      if (ast.cpy != null) ast.selector += "#";
       if (ast.set != null) ast.selector += "=";
 
-      if (ast.rep != null) ast.arguments.push(ast.rep);
+      if (ast.cpy != null) ast.arguments.push(ast.cpy);
       if (ast.set != null) ast.arguments.push(ast.set);
 
       if (ast.recipient != null) {
@@ -742,9 +780,9 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
           ast.js += prefix + `  let ${name} = arguments[arguments.length - 1 - ${ast.parameters.length - 1 - i}];\n`;
         }
         if (ast.parameters[i].tag === "Rest_Parameter") {
-          ast.js += prefix + `  let ${name} = new AM__root.Array.allocate();\n`;
+          ast.js += prefix + `  let ${name} = new AM__root.Array.constructor();\n`;
           ast.js += prefix + `  for (let i = ${restindex}, c = arguments.length - ${postcount}; i < c; i++) {\n`;
-          ast.js += prefix + `    ${name}.append_x(arguments[i]);\n`;
+          ast.js += prefix + `    ${name}["SEL__append!"](arguments[i]);\n`;
           ast.js += prefix + `  }\n`;
         }
       }
@@ -753,33 +791,33 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     }
   }
   else if (ast.tag === "E_Dictionary") {
-    ast.js = `(new AM__root.Dictionary.allocate())`;
+    ast.js = `(new AM__root.Dictionary.constructor())`;
     for (let element of ast.elements) {
       if (element.tag === "E_Expand") {
         Generate(element.expression, prefix, cls, method, loop, scope);
-        ast.js += `.insert_all_x(${element.expression.js})`;
+        ast.js += `["SEL__insert_all!"](${element.expression.js})`;
       }
       else if (element.tag === "E_Keyval") {
         Generate(element.key,   prefix, cls, method, loop, scope);
         Generate(element.value, prefix, cls, method, loop, scope);
-        ast.js += `.insert_x(${element.key.js}, ${element.value.js})`;
+        ast.js += `["SEL__insert!"](${element.key.js}, ${element.value.js})`;
       }
       else {
         Generate(element, prefix, cls, method, loop, scope);
-        ast.js += `.insert_keyval_x(${element.js})`;
+        ast.js += `["SEL__insert_keyval!"](${element.js})`;
       }
     }
   }
   else if (ast.tag === "E_Array") {
-    ast.js = `(new AM__root.Array.allocate())`;
+    ast.js = `(new AM__root.Array.constructor())`;
     for (let element of ast.elements) {
       if (element.tag === "E_Expand") {
         Generate(element.expression, prefix, cls, method, loop, scope);
-        ast.js += `.append_all_x(${element.expression.js})`;
+        ast.js += `["SEL__append_all!"](${element.expression.js})`;
       }
       else {
         Generate(element, prefix, cls, method, loop, scope);
-        ast.js += `.append_x(${element.js})`;
+        ast.js += `["SEL__append!"](${element.js})`;
       }
     }
   }
@@ -787,7 +825,7 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     Generate(ast.key,   prefix, cls, method, loop, scope);
     Generate(ast.value, prefix, cls, method, loop, scope);
 
-    ast.js = `AM__root.Keyval["[]"](${ast.key.js}, ${ast.value.js})`;
+    ast.js = `AM__root.Keyval["SEL__apply"](${ast.key.js}, ${ast.value.js})`;
   }
   else if (ast.tag === "E_Interval") {
     let ivalue = (ast.initial.open ? ast.initial.open : ast.initial.closed);
@@ -798,7 +836,7 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     Generate(ivalue, prefix, cls, method, loop, scope);
     Generate(fvalue, prefix, cls, method, loop, scope);
 
-    ast.js = `AM__root.Interval["[]"](${ivalue.js}, ${fvalue.js}, ${iexcl}, ${fexcl})`;
+    ast.js = `AM__root.Interval["SEL__apply"](${ivalue.js}, ${fvalue.js}, ${iexcl}, ${fexcl})`;
   }
   else if (ast.tag === "E_Concatenate") {
     if (ast.elements.length === 0) {
