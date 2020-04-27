@@ -13,9 +13,6 @@
 - Fix pbody to correspond to sbody, allowing `proc[] do raise`.
 - Consider making xbody parser productions consistent with AST prefixes.
 
-- Change `Class_Name.include?(instance)` to something like `instance.is(Class_Name)`.
-  (This is mostly to allow predictable compilation using an explicit metamethod.)
-
 =======================================
 
 - Implement foundation classes.
@@ -50,6 +47,7 @@
 - Add ordering for all supportable types.
 - Add parameter/assignment patterns.
 - Add full pattern matching.
+- Add assignment operator combining, like `i += 1`.
 
 - Consider adding an errata or tolerances document. Some examples follow.
   * Things that use version ordinals have a 53 bit limit. (Array.am)

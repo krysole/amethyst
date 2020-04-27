@@ -634,11 +634,9 @@ class Array (Object) {
 
 
   public find(value) {
-    if Proc.include?(value)
-    then return find_satisfy(value)
-    else return find_satisfy([e] -> e == value)
+    return find_satisfy(value.is(Proc) ? value : [e, i] -> e == value);
   }
-  private find_satisfy(predicate) {
+  private find_satisfy(value) {
     each e, i in self {
       return Maybe.Just[i] if predicate[e, i]
     }
@@ -677,10 +675,7 @@ class Array (Object) {
 
   public count(value) {
     return _count if value == nil
-
-    if Proc.include?(value)
-    then return count_satisfy(value)
-    else return count_satisfy([e] -> e == value)
+    return count_satisfy(value.is(Proc) ? value : [e, i] -> e == value)
   }
   private count_satisfy(predicate) {
     let c = 0
@@ -823,7 +818,7 @@ class Array (Object) {
   }
   public flat_into(array) {
     each e in self {
-      if Array.include?(e)
+      if e.is(Array)
       then e.flat_into(array)
       else array.append!(e)
     }

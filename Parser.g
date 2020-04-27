@@ -215,15 +215,16 @@ grammar Parser {
   | relationalExpression
   }
   relationalExpression {
-  | concatExpression:k "=>":o concatExpression:v !{ tag: "E_Keyval", key: k, value: v }
-  | concatExpression:a "==":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
-  | concatExpression:a "~=":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
-  | concatExpression:a ">=":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
-  | concatExpression:a "<=":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
-  | concatExpression:a ">":o  concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
-  | concatExpression:a "<":o  concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
-  | concatExpression:a "<>":o concatExpression:b !{ tag: "E_Order",                 a: a, b: b }
-  | concatExpression:a "is":o concatExpression:b !{ tag: "E_Is",                    a: a, b: b }
+  | concatExpression:k  "=>":o concatExpression:v !{ tag: "E_Keyval", key: k, value: v }
+  | concatExpression:a "===":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a "~==":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a  "==":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a  "~=":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a  ">=":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a  "<=":o concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a  ">":o  concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a  "<":o  concatExpression:b !{ tag: "E_Relational", o: o.text, a: a, b: b }
+  | concatExpression:a  "<>":o concatExpression:b !{ tag: "E_Order",                 a: a, b: b }
   | concatExpression
   }
   concatExpression {

@@ -498,24 +498,20 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     Generate(ast.a, prefix, cls, method, loop, scope);
     Generate(ast.b, prefix, cls, method, loop, scope);
 
-    if (ast.o === "==") ast.js =        `AM__eq(${ast.a.js}, ${ast.b.js})`;
-    if (ast.o === "~=") ast.js =        `AM__ne(${ast.a.js}, ${ast.b.js})`;
-    if (ast.o === "<")  ast.js = `(0 <  AM__ord(${ast.a.js}, ${ast.b.js}))`;
-    if (ast.o === "<=") ast.js = `(0 <= AM__ord(${ast.a.js}, ${ast.b.js}))`;
-    if (ast.o === ">=") ast.js = `(0 >= AM__ord(${ast.a.js}, ${ast.b.js}))`;
-    if (ast.o === ">")  ast.js = `(0 >  AM__ord(${ast.a.js}, ${ast.b.js}))`;
+    if (ast.o === "===") ast.js = `(${ast.a.js} === ${ast.b.js})`;
+    if (ast.o === "~==") ast.js = `(${ast.a.js} !== ${ast.b.js})`;
+    if (ast.o ===  "==") ast.js = `AM__eq(${ast.a.js}, ${ast.b.js})`;
+    if (ast.o ===  "~=") ast.js = `AM__ne(${ast.a.js}, ${ast.b.js})`;
+    if (ast.o ===  "<")  ast.js = `(0 <  AM__ord(${ast.a.js}, ${ast.b.js}))`;
+    if (ast.o ===  "<=") ast.js = `(0 <= AM__ord(${ast.a.js}, ${ast.b.js}))`;
+    if (ast.o ===  ">=") ast.js = `(0 >= AM__ord(${ast.a.js}, ${ast.b.js}))`;
+    if (ast.o ===  ">")  ast.js = `(0 >  AM__ord(${ast.a.js}, ${ast.b.js}))`;
   }
   else if (ast.tag === "E_Order") {
     Generate(ast.a, prefix, cls, method, loop, scope);
     Generate(ast.b, prefix, cls, method, loop, scope);
 
     ast.js = `AM__ord(${ast.a.js}, ${ast.b.js})`;
-  }
-  else if (ast.tag === "E_Is") {
-    Generate(ast.a, prefix, cls, method, loop, scope);
-    Generate(ast.b, prefix, cls, method, loop, scope);
-
-    ast.js = `(function(v,c){return c.tag in v;})(${ast.a.js}, ${ast.b.js})`;
   }
   else if (ast.tag === "E_Infix") {
     Generate(ast.a, prefix, cls, method, loop, scope);
@@ -593,9 +589,23 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       // NOTE This is after local handling to allow shadowing.
       ast.js = `arguments`;
     }
+    else if (ast.recipient != null && ast.selector === "is") {
+      if (ast.cpy != null) throw new Error("'is' metamethod expected no copyset argument.");
+      if (ast.set != null) throw new Error("'is' metamethod expected no set argument.");
+
+      if (ast.arguments.length !== 1) throw new Error("'is' metamethod expects exactly one argument.");
+
+      Generate(ast.recipient,    prefix, cls, method, loop, scope);
+      Generate(ast.arguments[0], prefix, cls, method, loop, scope);
+
+      let rcpt = ast.recipient.js;
+      let arg0 = ast.arguments[0].js;
+
+      ast.js = `(function(v,c){return c.tag in v;})(${rcpt}, ${arg0})`;
+    }
     else if (ast.recipient != null && ast.selector === "new") { // METAMETHOD (new)
-      if (ast.cpy       != null) throw new Error("'new' metamethod expected no copyset argument.");
-      if (ast.set       != null) throw new Error("'new' metamethod expected no set argument.");
+      if (ast.cpy != null) throw new Error("'new' metamethod expected no copyset argument.");
+      if (ast.set != null) throw new Error("'new' metamethod expected no set argument.");
 
       Generate(ast.recipient, prefix, cls, method, loop, scope);
       for (let argument of ast.arguments) {
