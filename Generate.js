@@ -51,12 +51,15 @@ function Mangle(identifier) {
     if (c === "'")            result += "_prime";
     if (c === "=")            result += "__SET";
     if (c === "#")            result += "__COPYSET";
+    if (c === "[")            result += "APPLY"; // "]" is just elided.
   }
   return result;
 }
 
 function MangleOperator(prefix, opname) {
   let name;
+  if (opname === "==")   name = "eq";
+  if (opname === "<>")   name = "ord";
   if (opname === "++")   name = "concat";
   if (opname === "|")    name = "bit_or";
   if (opname === "^")    name = "bit_xor";
@@ -75,7 +78,7 @@ function MangleOperator(prefix, opname) {
   if (opname === "frem") name = "frem";
   if (opname === "cquo") name = "cquo";
   if (opname === "crem") name = "crem";
-  return `${prefix}__${name}`;
+  return (prefix != null ? `${prefix}__${name}` : name);
 }
 
 export function Generate(ast, prefix, cls, method, loop, scope) {
@@ -101,10 +104,10 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
 
     if (ast.cmixins == null) ast.cmixins = ["Class"];
 
-    let iattrs   = [];
-    let cattrs   = [];
-    let imethods = [];
-    let cmethods = [];
+    let iattrs    = [];
+    let cattrs    = [];
+    let imethods  = [];
+    let cmethods  = [];
 
     for (let method of ast.methods) {
       Generate(method, "", ast, null, null, null);
@@ -116,6 +119,9 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       if (method.tag === "Method") {
         if (method.static) cmethods.push(method);
         else               imethods.push(method);
+      }
+      if (method.tag === "Operator") {
+        imethods.push(method);
       }
     }
 
@@ -166,11 +172,11 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     Generate(ast.body, prefix + "    ", cls, ast, null, null);
 
     let cname      = JSON.stringify(`${cls.name}${ast.static ? ".class" : ""}`);
-    let oname      = JSON.stringify(ast.name);
+    let oname      = JSON.stringify(MangleOperator(null, ast.name));
     let parameters = ast.parameters.map(p => Mangle(p.name)).join(", ");
 
     ast.js += prefix + `AM__defineOperator(${cname}, ${oname},\n`;
-    ast.js += prefix + `  function ${MangleOperator(ast.name)}(${parameters}) {\n`;
+    ast.js += prefix + `  function ${MangleOperator("OP", ast.name)}(${parameters}) {\n`;
     ast.js +=               ast.body.js;
     ast.js += prefix + `  }\n`;
     ast.js += prefix + `);\n`;
@@ -277,6 +283,8 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   else if (ast.tag === "S_If") {
     ast.js = ``;
 
+    if (ast.negated) ast.condition = { tag: "E_NOT", a: ast.condition };
+
     if (ast.alternative == null) {
       Generate(ast.condition,   prefix,        cls, method, loop, scope);
       Generate(ast.consiquent,  prefix + "  ", cls, method, loop, scope);
@@ -323,8 +331,6 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     for (let c of ast.cases) ast.js += c.js;
     ast.js += prefix + `  throw Error("MATCH_ERROR");\n`;
     ast.js += prefix + `}\n`;
-
-    throw new Error("NOT_IMPLEMENTED");
   }
   else if (ast.tag === "S_Once") {
     ast.js = ``;
@@ -348,6 +354,8 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   else if (ast.tag === "S_While") {
     ast.js = ``;
 
+    if (ast.negated) ast.condition = { tag: "E_NOT", a: ast.condition };
+
     Generate(ast.condition, prefix,        cls, method, loop, scope);
     Generate(ast.body,      prefix + "  ", cls, method, ast,  scope);
 
@@ -359,6 +367,8 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   }
   else if (ast.tag === "S_Do_While") {
     ast.js = ``;
+
+    if (ast.negated) ast.condition = { tag: "E_NOT", a: ast.condition };
 
     Generate(ast.condition, prefix,        cls, method, loop, scope);
     Generate(ast.body,      prefix + "  ", cls, method, ast,  scope);
@@ -520,16 +530,16 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       throw new Error("Prefix operator expected valid operand type.");
     }
     if (ast.a.tag === "E_Number") {
-      if (ast.name === "+") ast.a.value = +ast.a.value;
-      if (ast.name === "-") ast.a.value = -ast.a.value;
-      if (ast.name === "~") ast.a.value = ~ast.a.value;
+      if (ast.o === "+") ast.a.value = +ast.a.value;
+      if (ast.o === "-") ast.a.value = -ast.a.value;
+      if (ast.o === "~") ast.a.value = ~ast.a.value;
       Transmute(ast, ast.a);
       return Generate(ast, prefix, cls, method, loop, scope);
     }
     if (ast.a.tag === "E_Boolean") {
-      if (ast.name === "+") throw new Error("Prefix + operator expected value operand type.");
-      if (ast.name === "-") throw new Error("Prefix - operator expected valid operand type.");
-      if (ast.name === "~") ast.a.value = !ast.a.value;
+      if (ast.o === "+") throw new Error("Prefix + operator expected value operand type.");
+      if (ast.o === "-") throw new Error("Prefix - operator expected valid operand type.");
+      if (ast.o === "~") ast.a.value = !ast.a.value;
       Transmute(ast, ast.a);
       return Generate(ast, prefix, cls, method, loop, scope);
     }
@@ -537,9 +547,9 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       throw new Error("Prefix operator expected valid operand type.");
     }
 
-    if (ast.name === "+") ast.js = `${ast.a.js}["SEL__posate"]()`;
-    if (ast.name === "-") ast.js = `${ast.a.js}["SEL__negate"]()`;
-    if (ast.name === "~") ast.js = `${ast.a.js}["SEL__not"]()`;
+    if (ast.o === "+") ast.js = `${ast.a.js}["SEL__posate"]()`;
+    if (ast.o === "-") ast.js = `${ast.a.js}["SEL__negate"]()`;
+    if (ast.o === "~") ast.js = `${ast.a.js}["SEL__not"]()`;
   }
   else if (ast.tag === "E_Message") {
     if (ast.recipient == null && ast.selector.match(/^[A-Z][A-Za-z0-9_]*$/)) {
@@ -830,13 +840,13 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
   else if (ast.tag === "E_Interval") {
     let ivalue = (ast.initial.open ? ast.initial.open : ast.initial.closed);
     let fvalue = (ast.final.open   ? ast.final.open   : ast.final.closed);
-    let iexcl  = (ast.initial.open ? "true"           : "false");
-    let fexcl  = (ast.final.open   ? "true"           : "false");
+    let iincl  = (ast.initial.open ? "false"          : "true");
+    let fincl  = (ast.final.open   ? "false"          : "true");
 
     Generate(ivalue, prefix, cls, method, loop, scope);
     Generate(fvalue, prefix, cls, method, loop, scope);
 
-    ast.js = `AM__root.Interval["SEL__apply"](${ivalue.js}, ${fvalue.js}, ${iexcl}, ${fexcl})`;
+    ast.js = `AM__root.Interval["SEL__apply"](${ivalue.js}, ${fvalue.js}, ${iincl}, ${fincl})`;
   }
   else if (ast.tag === "E_Concatenate") {
     if (ast.elements.length === 0) {
@@ -890,13 +900,15 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     ast.loopLabel  = loop.loopLabel;
     ast.caseLabel  = "LABEL__" + method.genlabel++;
 
+    Generate(ast.pattern.expression, prefix + "  ", cls, method, ast, scope);
+    Generate(ast.body,               prefix + "  ", cls, method, ast, scope);
+
+    // Check for literal pattern expression after the pattern has had a chance
+    // to be simplified down to a basic literal AST node.
     let literals = ["E_Self", "E_String", "E_Number", "E_Boolean", "E_Nil"];
     if (!literals.includes(ast.pattern.expression.tag)) {
       throw new Error("P_Literal pattern expected literal expression.");
     }
-
-    Generate(ast.pattern.expression, prefix + "  ", cls, method, ast, scope);
-    Generate(ast.body,               prefix + "  ", cls, method, ast, scope);
 
     ast.js += prefix + `${ast.caseLabel}: while (true) {\n`;
     ast.js += prefix + `  if (AM__ne(SUBJECT, ${ast.pattern.expression.js})) break ${ast.caseLabel};\n`;

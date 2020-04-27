@@ -43,10 +43,10 @@ grammar Parser {
   | vis:p static?:s "[" plist:ps "]"      sparam("[]"):x    pbody:b
     !{ tag: "Method", name: x.name, vis: p, static: s, parameters: ps, sparam: x.parameter, body: b }
 
-  | "operator" static?:s infixop:n "(" local:a "," local:b ")" pbody:b
-    !{ tag: "Plain_Parameter", name: a }:ap
-    !{ tag: "Plain_Parameter", name: b }:bp
-    !{ tag: "Operator", name: n, static: s, parameters: [ap, bp], body: b }
+  | "operator" static?:s infixop:n "(" local:pa "," local:pb ")" pbody:b
+    !{ tag: "Plain_Parameter", name: pa }:pa
+    !{ tag: "Plain_Parameter", name: pb }:pb
+    !{ tag: "Operator", name: n, static: s, parameters: [pa, pb], body: b }
 
   | vis:gp ":" vis:sp ":" vis:rp static?:s ID:n ( "=" expression | !null ):e
     !{ tag: "Attribute", name: n.text, get: gp, set: sp, cpy: rp,   static: s, value: e }
@@ -98,7 +98,7 @@ grammar Parser {
     "if" expression:c
     ( TERM? "then" sbody | TERM? block ):t
     ( TERM? elseBranch | !null ):f
-    !{ tag: "S_If", negated: false, condition: c, consiquent: t, alterantive: f }
+    !{ tag: "S_If", negated: false, condition: c, consiquent: t, alternative: f }
   }
   unlessStatement {
     "unless" expression:c
@@ -112,7 +112,7 @@ grammar Parser {
   | "else" sbody
   }
   givenStatement {
-    "given" ( local:n "=" )? expression:s "match" mbody:cs
+    "given" ( local:n "=" | !null:n ) expression:s "match" mbody:cs
     !{ tag: "S_Given", name: n, subject: s, cases: cs }
   }
   caseStatement {

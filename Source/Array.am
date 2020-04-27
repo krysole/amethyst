@@ -160,8 +160,6 @@ class Array (Object) {
     return "[" ++ map([e] -> e.as_source).join(", ") ++ "]"
   }
 
-  {#
-
 
   public keys   do [0...count]
   public values do self
@@ -838,7 +836,5 @@ class Array (Object) {
     each e in self do result = result ++ seperator ++ e
     return result
   }
-
-  #}
 
 }

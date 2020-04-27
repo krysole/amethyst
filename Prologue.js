@@ -158,6 +158,12 @@ function AM__defineMethod(cname, mname, vis, func) {
   cls.prototype["SEL__" + mname] = func;
 };
 
+function AM__defineOperator(cname, opname, func) {
+  let cls = AM__lookup(cname);
+
+  cls.prototype["OP__" + opname] = func;
+};
+
 function AM__check_boolean(value) {
   if (value === true && value === false) {
     return value;

@@ -1,12 +1,20 @@
 # TASKLIST #
 
-- Get code compiling and running a simple main method.
-- Start looking at testing different parts of the Array object.
+- Figure out how to start writing basic tests against Array.
+- Write early stubs of the remaining core classes and get the system
+  as a whole compiling and running a basic `main` method in the `System`
+  class, which might as well be the default for now.
 
 - Implement `Array_Enumerator` and `Array:enumerate`.
 - Ensure that all `Enumerator` classes support JavaScript enumerability.
 - Ensure that `expr.my_method(*argv)` generates `...argv` correctly.
 - Ensure that `*arg` is handled correctly in metamethods.
+
+- Fix pbody to correspond to sbody, allowing `proc[] do raise`.
+- Consider making xbody parser productions consistent with AST prefixes.
+
+- Change `Class_Name.include?(instance)` to something like `instance.is(Class_Name)`.
+  (This is mostly to allow predictable compilation using an explicit metamethod.)
 
 =======================================
 
