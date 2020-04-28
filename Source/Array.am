@@ -755,11 +755,11 @@ class Array (Object) {
     return array
   }
   public step_exact(step_count) {
-    raise "domain_error" unless count rem step_count == 0
+    raise "INDEX_ERROR" unless count rem step_count == 0
     return step(step_count)
   }
   public step_total(step_count) {
-    raise "domain_error" unless count rem step_count == 1
+    raise "INDEX_ERROR" unless count rem step_count == 1
     return step(step_count)
   }
 
@@ -777,7 +777,7 @@ class Array (Object) {
     return chunks.append!(e)
   }
   public chunks_exact(step_count) {
-    raise "domain_error" unless count rem step_count == 0
+    raise "INDEX_ERROR" unless count rem step_count == 0
     return chunks(step_count)
   }
   public chunks_truncate(step_count) {

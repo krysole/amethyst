@@ -152,6 +152,15 @@ function AM__defineAttribute(cname, aname, vis, exprstring) {
   cls.attrinits.push(`this[${propname}] = ${exprstring};\n`);
 };
 
+function AM__defineAlias(cname, mname, vis, thunk) {
+  let cls  = AM__lookup(cname);
+  let func = thunk();
+
+  if (typeof func !== "function") throw new Error("TYPE_ERROR");
+
+  cls.prototype["SEL__" + mname] = func;
+};
+
 function AM__defineMethod(cname, mname, vis, func) {
   let cls = AM__lookup(cname);
 

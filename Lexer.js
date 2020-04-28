@@ -17,7 +17,7 @@
 //
 "use strict";
 
-export class Loc {
+class Loc {
 
   constructor(path, string, start, end) {
     let line   = 1;
@@ -52,7 +52,7 @@ export class Loc {
 
 }
 
-export class Lexer {
+class Lexer {
 
   constructor(input, path) {
     this.input       = input;
@@ -650,3 +650,6 @@ export class Lexer {
   }
 
 }
+
+module.exports     = Lexer;
+module.exports.Loc = Loc;

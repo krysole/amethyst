@@ -17,7 +17,8 @@
 //
 "use strict";
 
-export function transmute(target, source) {
+module.exports.transmute =
+function transmute(target, source) {
   for (let name in target) {
     delete target[name];
   }

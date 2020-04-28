@@ -1,0 +1,59 @@
+--
+-- The Amethyst Programming Language
+--
+-- Copyright 2020 Lorenz Pretterhofer <krysole@alexicalmistake.com>
+--
+-- Permission to use, copy, modify, and distribute this work for any
+-- purpose with or without fee is hereby granted, provided that the above
+-- copyright notice and this permission notice appear in all copies.
+--
+-- THE WORK IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+-- WITH REGARD TO THIS WORK INCLUDING ALL IMPLIED WARRANTIES OF
+-- MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+-- ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+-- WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+-- ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+-- OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS WORK.
+--
+
+-- TODO
+-- This is currently just a standin for the JavaScript `console` facility.
+-- Eventually this might be worth replacing with something that works better
+-- with the languages native features, but since access to the development
+-- environment is only really an option when linked to an active session,
+-- whereas access to the JavaScript console is always active, this might be
+-- useful regardless for performing console actions.
+--
+-- Some methods here may suggest some amount of work to improve the support
+-- for Amethyst object formats however.
+
+class Console (Object) abstract {
+
+  public static clear as $console.$clear
+
+  public static log         as $console.$log
+  public static log_debug   as $console.$debug
+  public static log_info    as $console.$info
+  public static log_warning as $console.$warn
+  public static log_error   as $console.$error
+
+  public static dir    as $console.$dir
+  public static dirxml as $console.$dirxml
+
+  public static table as $console.$table
+
+  public static trace as $console.$trace
+
+  public static count(label)       as $console.$count
+  public static reset_count(label) as $console.$countReset
+
+  public static profile_begin as $console.$profile
+  public static profile_end   as $console.$profile
+
+  public static timer_begin as $console.$time
+  public static timer_end   as $console.$timeEnd
+  public static timer_log   as $console.$timeLog
+
+  public static timestamp as $console.$timeStamp
+
+}

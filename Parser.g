@@ -352,6 +352,7 @@ grammar Parser {
   |     local:n !{ tag: "Plain_Parameter", name: n }
   }
   pbody {
+  | TERM? "as" expression:e                                                    !{ tag: "Alias", expression: e }
   | TERM? "do" expression:e                                                    !{ tag: "Block", statements: [{ tag: "S_Return", expression: e }] }
   | TERM? "{" INDENT ( ( statement ; ";" )*:ss ";"? TERM !ss )*:sss DEDENT "}" !{ tag: "Block", statements: sss.flat() }
   | TERM? "{"          ( statement ; ";" )*:ss ";"? TERM?                  "}" !{ tag: "Block", statements: ss         }

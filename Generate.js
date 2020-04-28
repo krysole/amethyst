@@ -81,7 +81,7 @@ function MangleOperator(prefix, opname) {
   return (prefix != null ? `${prefix}__${name}` : name);
 }
 
-export function Generate(ast, prefix, cls, method, loop, scope) {
+function Generate(ast, prefix, cls, method, loop, scope) {
   if (ast == null) {
     throw new Error(`Expected non-null AST node.`);
   }
@@ -214,7 +214,14 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     let fname = `SEL__${cls.name.replace(".", "__")}${ast.static ? "__class" : ""}__${Mangle(ast.name)}`;
     let vis   = JSON.stringify(ast.vis);
 
-    if (restindex == null) {
+    if (ast.body.tag === "Alias") {
+      ast.js += prefix + `AM__defineAlias(${cname}, ${mname}, ${vis},\n`;
+      ast.js += prefix + `  function () {\n`;
+      ast.js +=               ast.body.js;
+      ast.js += prefix + `  }\n`;
+      ast.js += prefix + `);\n`;
+    }
+    else if (restindex == null) {
       let parameters = ast.parameters.map(p => Mangle(p.name)).join(", ");
 
       ast.js += prefix + `AM__defineMethod(${cname}, ${mname}, ${vis},\n`;
@@ -245,6 +252,15 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
       ast.js += prefix + `  }\n`;
       ast.js += prefix + `);\n`;
     }
+  }
+
+  else if (ast.tag === "Alias") {
+    ast.parent = scope;
+    ast.locals = [];
+
+    Generate(ast.expression, prefix, cls, method, loop, ast);
+
+    ast.js = prefix + `return ${ast.expression.js};\n`;
   }
 
   else if (ast.tag === "Block") {
@@ -946,3 +962,5 @@ export function Generate(ast, prefix, cls, method, loop, scope) {
     throw new Error(`Expected valid AST node tag, found node tag ${ast.tag}.`);
   }
 }
+
+module.exports = Generate;

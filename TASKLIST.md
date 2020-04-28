@@ -42,6 +42,8 @@
 - Figure out what I'm doing with `AM__as_string` in prelude.
 - Figure out if the attribute notation could be better.
   * Maybe a 'rwc' flag system. I.e., `attr "r"`, `attr "rw"`, `attr "c"`.
+- Figure out if `INDEX_ERROR` should be `DOMAIN_ERROR` or something.
+- Figure out how conditional compilation, macros and assertions should work.
 
 - Add reflection and metaprogramming.
 - Add ordering for all supportable types.
