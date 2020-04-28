@@ -17,9 +17,9 @@
 //
 "use strict";
 
-import { transmute } from "./Util.js";
+let { transmute } = require("./Util.js");
 
-export function Simplify(ast) {
+function Simplify(ast) {
   if (ast == null) {
     throw new Error(`Expected non-null ast node.`);
   }
@@ -122,3 +122,5 @@ export function Simplify(ast) {
     throw new Error(`Expected valid node tag, found ${ast.tag}.`);
   }
 }
+
+module.exports = Simplify;

@@ -17,7 +17,8 @@
 //
 "use strict";
 
-export function transmute(target, source) {
+module.exports.transmute =
+function transmute(target, source) {
   for (let name in target) {
     delete target[name];
   }
@@ -26,7 +27,8 @@ export function transmute(target, source) {
   }
 }
 
-export function equal(a, b) {
+module.exports.equal =
+function equal(a, b) {
   if (a === b) {
     return true;
   }
@@ -57,7 +59,8 @@ export function equal(a, b) {
   }
 }
 
-export function union(a, b) {
+module.exports.union =
+function union(a, b) {
   let v = [];
   for (let e of a) {
     if (!v.includes(e)) v.push(e);

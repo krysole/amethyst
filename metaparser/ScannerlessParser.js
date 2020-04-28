@@ -3,7 +3,7 @@
 
 const FAIL = Symbol("FAIL");
 
-export class ScannerlessParser {
+class ScannerlessParser {
   
   match(rule, input, name) {
     this._input    = input;
@@ -2017,3 +2017,5 @@ export class ScannerlessParser {
   }
   
 }
+
+module.exports = ScannerlessParser;

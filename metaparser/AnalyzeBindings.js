@@ -17,9 +17,9 @@
 //
 "use strict";
 
-import { union } from "./Util.js";
+let { union } = require("./Util.js");
 
-export function AnalyzeBindings(ast) {
+function AnalyzeBindings(ast) {
   if (ast == null) {
     throw new Error(`Expected non-null ast node.`);
   }
@@ -125,3 +125,5 @@ export function AnalyzeBindings(ast) {
     throw new Error(`Expected valid node tag, found ${ast.tag}.`);
   }
 }
+
+module.exports = AnalyzeBindings;

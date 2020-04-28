@@ -1,4 +1,4 @@
-#!/usr/bin/env node --experimental-modules
+#!/usr/bin/env node
 //
 // The Metaparser Compiler Language
 //
@@ -18,17 +18,16 @@
 //
 "use strict";
 
-import * as fs               from "fs";
-import { inspect }           from "util";
+let fs                = require("fs");
+let { inspect }       = require("util");
 
-import { ScannerlessParser } from "./ScannerlessParser.js";
-import { TokenParser }       from "./TokenParser.js";
-import { Simplify }          from "./Simplify.js";
-import { LeftFactor }        from "./LeftFactor.js";
-import { LeftRecursion }     from "./LeftRecursion.js";
-import { AnalyzeBindings }   from "./AnalyzeBindings.js";
-import { Generate }          from "./Generate.js";
-
+let ScannerlessParser = require("./ScannerlessParser.js");
+let TokenParser       = require("./TokenParser.js");
+let Simplify          = require("./Simplify.js");
+let LeftFactor        = require("./LeftFactor.js");
+let LeftRecursion     = require("./LeftRecursion.js");
+let AnalyzeBindings   = require("./AnalyzeBindings.js");
+let Generate          = require("./Generate.js");
 
 function main() {
   let outputType = null;

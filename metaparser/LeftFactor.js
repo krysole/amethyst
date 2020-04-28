@@ -17,9 +17,9 @@
 //
 "use strict";
 
-import { transmute, equal } from "./Util.js";
+let { transmute, equal } = require("./Util.js");
 
-export function LeftFactor(ast) {
+function LeftFactor(ast) {
   if (ast == null) {
     throw new Error(`Expected non-null ast node.`);
   }
@@ -175,3 +175,5 @@ export function LeftFactor(ast) {
     throw new Error(`Expected valid node tag, found ${ast.tag}.`);
   }
 }
+
+module.exports = LeftFactor;

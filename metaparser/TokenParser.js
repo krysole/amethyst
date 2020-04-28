@@ -3,7 +3,7 @@
 
 const FAIL = Symbol("FAIL");
 
-export class TokenParser {
+class TokenParser {
   
   match(rule, input, name) {
     this._input    = input;
@@ -2265,3 +2265,5 @@ export class TokenParser {
   }
   
 }
+
+module.exports = TokenParser;

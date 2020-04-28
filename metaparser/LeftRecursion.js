@@ -30,7 +30,7 @@
 // system for the time being.
 //
 
-export function LeftRecursion(ast) {
+function LeftRecursion(ast) {
   if (ast == null) {
     throw new Error(`Expected non-null ast node.`);
   }
@@ -287,3 +287,5 @@ function IterPattern(ast, name, edge) {
     throw new Error(`Expected valid node tag, found ${ast.tag}.`);
   }
 }
+
+module.exports = LeftRecursion;
